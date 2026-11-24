@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Meine Termine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#7a0c1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Termine">
+</head>
+<body>
+<div id="bg"></div><div id="tint"></div>
+<main class="wrap">
+  <section class="card" aria-label="Jetzt dran">
+    <div class="top">
+      <div class="hello" id="hello">Hallo</div>
+      <div class="pill" id="status"><i></i><span>Lade …</span></div>
+    </div>
+    <div class="tabs" id="tabs" role="tablist" aria-label="Reiter"></div>
+    <div class="now">
+      <div>
+        <div class="now-label" id="nowLabel"><i></i>Jetzt dran</div>
+        <h1 id="nowTitle">Einen Moment …</h1>
+        <div class="now-meta" id="nowMeta"></div>
+      </div>
+      <div>
+        <div class="cd" aria-live="polite"><div><b id="cdD">–</b><span>Tage</span></div><div><b id="cdH">–</b><span>Std.</span></div><div><b id="cdM">–</b><span>Min.</span></div></div>
+        <div class="cd-note" id="cdNote"></div>
+      </div>
+    </div>
+    <div class="switch" role="group" aria-label="Ansicht">
+      <button type="button" data-v="woche" aria-pressed="true">Woche <small id="swW"></small></button>
+      <button type="button" data-v="monat" aria-pressed="false">Monat <small id="swM"></small></button>
+    </div>
+    <div class="prog">
+      <div class="pct" id="pct">0 %</div>
+      <div class="bar"><div class="fill" id="fill"></div></div>
+      <div class="stat"><span id="statL"></span><span id="statR"></span></div>
+    </div>
+  </section>
+
+  <div id="view"></div>
+
+  <div class="actions">
+    <button type="button" class="act" id="calOpen" aria-expanded="false" hidden><i>▦</i>Kalender zuordnen</button>
+    <button type="button" class="act" id="patOpen" aria-expanded="false"><i>✿</i>Muster</button>
+  </div>
+  <section class="card" id="pQ" hidden>
+    <h2>Welche Kategorie?</h2>
+    <p class="sub" id="qTitle"></p>
+    <div class="qcats" id="qCats"></div>
+    <div id="qAsk" hidden>
+      <p class="sub" id="qAskTxt"></p>
+      <div class="row"><button class="btn" id="qYes" type="button">Ja, immer</button><button class="btn ghost" id="qNo" type="button">Nur dieser Termin</button></div>
+    </div>
+  </section>
+  <section class="card" id="pCal" hidden>
+    <h2>Kalender zuordnen</h2>
+    <p class="sub" id="calSub">Wähle einmal, welcher Google-Kalender zu welchem Reiter gehört. Das gilt danach auf allen deinen Geräten.</p>
+    <div class="calrows" id="calRows"></div>
+    <div class="row" style="margin-top:14px"><button class="btn" id="calSave" type="button">Speichern</button></div>
+    <div class="msg" id="calMsg"></div>
+  </section>
+  <section class="card" id="pPattern" hidden>
+    <h2>Muster</h2>
+    <p class="sub" id="patSub"></p>
+    <div class="cat-grid" id="catGrid"></div>
+    <div class="row" style="margin-top:14px"><button class="btn ghost" id="patReset" type="button">Zurück zum aktuellen Muster</button></div>
+  </section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="config.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="google.js"></script>
+<script src="kategorien.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

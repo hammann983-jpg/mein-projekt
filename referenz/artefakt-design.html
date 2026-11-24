@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meine Termine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: ruhig, warm, ADHS-freundlich – immer nur der nächste Schritt groß, alles andere klein und abhakbar
+   IDEA: Stoffmuster – die ganze Seite ist ein Stoff (Punkte, Streifen, Seifenblasen, Blumen, Aquarell), darauf liegen Papierkarten
+   PICTURE: Kopfkarte „Jetzt dran“ mit Countdown, darunter die Woche als 7 To-do-Karten oder der Monat
+   COLOUR and TYPE: pro 4-Wochen-Phase ein Muster in einer Farbvariante; Kategorien Rosé, Petrol, Senf, Violett, Koralle; Fredoka + Nunito
+   LAYOUT: eine Spalte Karten, max. 1180px; Woche als Raster, auf dem Handy untereinander mit „heute“ zuerst sichtbar */
+:root{color-scheme:light;--card:#fffaf3;--ink:#3a0a12;--accent:#7a0c1a;--accent-ink:#fff;--ring:rgba(255,255,255,.55);
+--soft:color-mix(in srgb,var(--ink) 62%,var(--card));--line:color-mix(in srgb,var(--accent) 16%,var(--card));--pale:color-mix(in srgb,var(--accent) 9%,var(--card));
+--c-arzt:#d23f5d;--c-arbeit:#1f8582;--c-studium:#c98a0c;--c-privat:#7351b0;--c-content:#e2622f}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0}
+body{color:var(--ink);font:16px/1.55 Nunito,system-ui,sans-serif;overflow-x:clip;min-height:100vh}
+#bg{position:fixed;inset:0;z-index:-3;background:var(--pattern,#f3e6d6);transition:background .5s}
+#tint{position:fixed;inset:0;z-index:-2;pointer-events:none;background:var(--tint,transparent);mix-blend-mode:var(--blend,normal);opacity:var(--tintop,0)}
+h1,h2,h3,h4{font-family:Fredoka,Nunito,sans-serif;margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.wrap{max-width:1180px;margin:0 auto;padding:clamp(18px,4vw,44px) max(3.5vw,14px) 60px;display:grid;gap:clamp(18px,2.6vw,26px)}
+.card{background:var(--card);border-radius:30px;padding:clamp(18px,3vw,30px);box-shadow:0 0 0 8px var(--ring),0 22px 50px rgba(30,0,10,.2)}
+/* Kopfkarte */
+.top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 16px;align-items:center}
+.hello{font:600 16px Fredoka,sans-serif;color:var(--soft)}
+.pill{display:inline-flex;align-items:center;gap:8px;background:var(--pale);border-radius:99px;padding:6px 8px 6px 14px;font-size:14px;font-weight:700}
+.pill>i{width:9px;height:9px;border-radius:50%;background:#e0a526;flex:none}
+.pill.live>i{background:#2fb67a}
+.pill button{background:var(--accent);color:var(--accent-ink);border:0;border-radius:99px;padding:6px 12px;font-weight:800;min-height:34px}
+.now{display:grid;grid-template-columns:minmax(0,1.15fr) auto;gap:22px;align-items:center;margin-top:18px}
+.now-label{display:inline-flex;align-items:center;gap:8px;font:600 15px Fredoka,sans-serif;color:var(--cc,var(--accent))}
+.now-label i{width:12px;height:12px;border-radius:50%;background:var(--cc,var(--accent))}
+.now h1{font-size:clamp(30px,5vw,50px);line-height:1.05;margin:6px 0 8px;text-wrap:balance;overflow-wrap:anywhere}
+.now-meta{font-size:17px;color:var(--soft);font-weight:600}
+.cd{display:flex;gap:10px}
+.cd div{width:clamp(78px,9.5vw,104px);aspect-ratio:1;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-content:center;text-align:center;box-shadow:0 10px 22px rgba(0,0,0,.18)}
+.cd b{font:700 clamp(28px,3.8vw,40px)/1 Fredoka,sans-serif}.cd span{font-size:12px;font-weight:800}
+.cd-note{font-size:14px;color:var(--soft);font-weight:700;margin-top:8px;text-align:center}
+.switch{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--pale);border-radius:22px;padding:6px;margin-top:22px}
+.switch button{border:0;background:transparent;border-radius:17px;padding:12px;font:600 18px Fredoka,sans-serif;min-height:54px;display:flex;align-items:center;justify-content:center;gap:10px}
+.switch button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);box-shadow:0 6px 16px rgba(0,0,0,.15)}
+.switch small{font:700 13px Nunito,sans-serif;opacity:.8}
+.prog{margin-top:16px}
+.bar{height:18px;border-radius:99px;background:var(--pale);overflow:hidden}
+.fill{height:100%;width:0;border-radius:99px;background:var(--accent) radial-gradient(circle,rgba(255,255,255,.35) 3px,transparent 4px) 0 0/16px 18px;transition:width .5s cubic-bezier(.3,1.4,.5,1)}
+.stat{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-top:6px;font-weight:800;font-size:14px;color:var(--soft)}
+.stat b{color:var(--accent)}
+/* Woche */
+.week{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:clamp(16px,2vw,22px)}
+.day{display:flex;flex-direction:column;gap:10px;padding:18px;animation:pop .45s backwards}
+@keyframes pop{from{opacity:0;transform:translateY(12px)}}
+.day.past>*{opacity:.6}
+.day.today{box-shadow:0 0 0 8px var(--ring),0 0 0 12px var(--accent),0 22px 50px rgba(30,0,10,.25)}
+.dh{display:flex;align-items:center;gap:10px}
+.dn{width:46px;height:46px;flex:none;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font:700 20px Fredoka,sans-serif}
+.dw{font:600 18px Fredoka,sans-serif;line-height:1.1}.dw small{display:block;font:800 12px Nunito,sans-serif;color:var(--soft)}
+.dots{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:70px}
+.dots i{width:10px;height:10px;border-radius:50%;border:2px solid var(--accent)}
+.dots i.on{background:var(--accent)}
+.items{list-style:none;margin:0;padding:0;display:grid}
+.items li{border-bottom:2px dotted var(--line)}
+.items li:last-child{border:0}
+.it{display:flex;gap:12px;align-items:flex-start;padding:9px 2px;cursor:pointer;border-radius:12px}
+.it:hover{background:var(--pale)}
+.it input{appearance:none;flex:none;width:28px;height:28px;margin:1px 0 0;border-radius:50%;border:3px solid var(--cc);background:var(--card);cursor:pointer;position:relative;transition:background .2s,transform .2s}
+.it input:checked{background:var(--cc);transform:scale(1.06)}
+.it input:checked::after{content:"";position:absolute;left:7px;top:2px;width:7px;height:13px;border:solid #fff;border-width:0 3px 3px 0;transform:rotate(45deg)}
+.it-t{font-weight:700;line-height:1.3;overflow-wrap:anywhere}
+.it-m{display:block;font-size:12.5px;font-weight:800;color:var(--cc)}
+.it input:checked~span .it-t{text-decoration:line-through;color:var(--soft)}
+.more{border:0;background:var(--pale);border-radius:99px;padding:6px 12px;font-weight:800;font-size:13px;align-self:flex-start;min-height:36px}
+.free{color:var(--soft);font-weight:800;font-size:14px;display:flex;align-items:center;gap:8px;padding:6px 0}
+.free::before{content:"";width:12px;height:12px;border-radius:50%;border:2px dashed var(--soft)}
+.alldone{background:var(--accent);color:var(--accent-ink);border-radius:14px;padding:6px 12px;font:600 14px Fredoka,sans-serif;text-align:center}
+/* Monat */
+.mtop{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.mtop h2{font-size:clamp(24px,3.4vw,32px)}
+.nav{display:flex;gap:6px}
+.nav button{border:2px solid var(--line);background:var(--card);border-radius:99px;min-width:44px;min-height:44px;font-weight:800;padding:0 14px}
+.mh,.mg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.mh div{text-align:center;font-weight:800;font-size:13px;color:var(--soft)}
+.md{border:0;background:var(--pale);border-radius:16px;min-height:92px;padding:8px;text-align:left;display:flex;flex-direction:column;gap:4px}
+.md.out{opacity:.38}.md.today{box-shadow:inset 0 0 0 3px var(--accent)}.md.sel{background:var(--accent);color:var(--accent-ink)}
+.md b{font:600 17px Fredoka,sans-serif}
+.md .mt{font-size:12px;font-weight:700;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.md .md-dots{display:flex;gap:3px;flex-wrap:wrap;margin-top:auto}
+.md .md-dots i{width:10px;height:10px;border-radius:50%;background:var(--cc);box-shadow:0 0 0 2px var(--card)}
+.mdetail{margin-top:18px}
+/* Aktionen */
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+.act{display:inline-flex;align-items:center;gap:10px;border:0;background:var(--card);border-radius:99px;padding:10px 20px 10px 10px;font:600 17px Fredoka,sans-serif;min-height:54px;box-shadow:0 0 0 6px var(--ring),0 12px 28px rgba(30,0,10,.16)}
+.act i{width:34px;height:34px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-style:normal;font-size:20px;line-height:1}
+.act[aria-expanded=true]{background:var(--accent);color:var(--accent-ink)}.act[aria-expanded=true] i{background:var(--accent-ink);color:var(--accent)}
+.panel[hidden]{display:none}
+.actions.inweek{display:none}
+.sumcard{background:var(--accent);color:var(--accent-ink);display:flex;flex-direction:column;gap:10px}
+.sumcard h3{font-size:20px}
+.sumcard p{margin:0;font-weight:700;opacity:.9;font-size:14.5px}
+.sumcard .cnt{display:flex;flex-wrap:wrap;gap:6px}
+.sumcard .cnt span{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);border-radius:99px;padding:4px 10px;font-size:13px;font-weight:800}
+.sumcard .cnt i{width:10px;height:10px;border-radius:50%;background:var(--cc);box-shadow:0 0 0 2px #fff}
+.sumcard button{border:0;background:var(--card);color:var(--ink);border-radius:14px;padding:10px 14px;font:600 16px Fredoka,sans-serif;min-height:46px;text-align:left}
+.panel h2{font-size:24px;margin-bottom:4px}
+.panel .sub{color:var(--soft);font-weight:600;margin:0 0 14px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.field{flex:1 1 260px;border:2px solid var(--line);background:var(--pale);border-radius:16px;padding:12px 16px;font-size:16px;min-height:52px;color:var(--ink)}
+textarea.field{min-height:150px;resize:vertical;line-height:1.5}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:16px;padding:12px 20px;font-weight:800;min-height:52px}
+.btn.ghost{background:transparent;color:var(--accent);border:2px solid var(--line)}
+.btn:disabled{opacity:.5;cursor:default}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:14px}
+.grid label{display:grid;gap:4px;font-size:14px;font-weight:800;color:var(--soft)}
+.grid .wide{grid-column:1/-1}
+.grid input,.grid select{border:2px solid var(--line);background:var(--pale);border-radius:12px;padding:10px 12px;font-size:16px;min-height:46px;color:var(--ink)}
+.chk{display:flex;align-items:center;gap:10px;font-weight:700;margin-top:12px;min-height:44px}
+.chk input{width:24px;height:24px;accent-color:var(--accent)}
+.rems{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.rems span{display:inline-flex;align-items:center;gap:6px;background:var(--pale);border-radius:99px;padding:5px 12px;font-size:14px;font-weight:700}
+.rems span::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.msg{margin-top:10px;font-weight:800}.msg.ok{color:#1f8582}.msg.err{color:#c0182f}
+.cp-list{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:8px}
+.cp-list li{display:grid;grid-template-columns:auto 130px 80px minmax(0,1fr);gap:10px;align-items:center;background:var(--pale);border-radius:14px;padding:8px 12px;border-left:5px solid var(--c-content)}
+.cp-list input[type=checkbox]{width:22px;height:22px;accent-color:var(--c-content)}
+.cp-list input[type=date],.cp-list input[type=time],.cp-list input[type=text]{border:2px solid var(--line);background:var(--card);border-radius:10px;padding:6px 8px;font-size:15px;min-height:40px;width:100%}
+.cweek{display:grid;gap:8px;margin-bottom:16px}
+.cw{display:flex;gap:12px;align-items:center;background:var(--pale);border-radius:14px;padding:10px 14px;border-left:5px solid var(--c-content);font-weight:700}
+.cw small{display:block;color:var(--c-content);font-weight:800;font-size:12.5px}
+.cat-dd{min-width:110px;font-weight:800;color:var(--c-content)}
+/* Musterkatalog */
+.cat-grid{display:grid;gap:14px}
+.crow{display:grid;grid-template-columns:150px repeat(3,minmax(0,1fr));gap:10px;align-items:center}
+.crow h3{font-size:17px}
+.sw{border:3px solid transparent;border-radius:18px;height:74px;background:var(--swb);background-size:var(--sws,auto);position:relative;box-shadow:0 6px 14px rgba(0,0,0,.12);overflow:hidden}
+.sw span{position:absolute;left:6px;bottom:6px;background:rgba(255,255,255,.9);color:#222;border-radius:99px;padding:2px 9px;font-size:12px;font-weight:800}
+.sw{filter:var(--swf,none)}.sw.sel{border-color:var(--accent);box-shadow:0 0 0 3px var(--card),0 0 0 6px var(--accent)}.sw.cur::after{content:"aktuell";position:absolute;right:6px;top:6px;background:var(--accent);color:var(--accent-ink);border-radius:99px;padding:1px 8px;font-size:11px;font-weight:800}
+.info{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.info div{background:var(--pale);border-radius:20px;padding:16px}
+.info h3{font-size:17px;margin-bottom:4px}.info p{margin:0;font-size:15px;color:var(--soft)}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(140px);background:var(--accent);color:var(--accent-ink);padding:12px 22px;border-radius:99px;font-weight:800;transition:transform .3s;z-index:9;max-width:92vw;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.toast.on{transform:translateX(-50%) translateY(0)}
+@media(max-width:760px){.now{grid-template-columns:1fr}.cd{justify-content:flex-start}.cd-note{text-align:left}
+.md{min-height:58px;padding:5px;border-radius:12px}.md .mt{display:none}.md b{font-size:14px}.md .md-dots i{width:7px;height:7px}
+.crow{grid-template-columns:repeat(3,minmax(0,1fr))}.crow h3{grid-column:1/-1}.cp-list li{grid-template-columns:auto minmax(0,1fr) 90px}.cp-list li input[type=text]{grid-column:1/-1}}
+@media(max-width:520px){.switch small{display:none}.switch button{font-size:17px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div id="bg"></div><div id="tint"></div>
+<main class="wrap">
+  <!-- Kopfkarte: Jetzt dran -->
+  <section class="card" aria-label="Jetzt dran">
+    <div class="top">
+      <div class="hello" id="hello">Hallo Alicia</div>
+      <div class="pill" id="status"><i></i><span>Lade …</span></div>
+    </div>
+    <div class="now">
+      <div>
+        <div class="now-label" id="nowLabel"><i></i>Jetzt dran</div>
+        <h1 id="nowTitle">Einen Moment …</h1>
+        <div class="now-meta" id="nowMeta"></div>
+      </div>
+      <div>
+        <div class="cd" aria-live="polite"><div><b id="cdD">–</b><span>Tage</span></div><div><b id="cdH">–</b><span>Std.</span></div><div><b id="cdM">–</b><span>Min.</span></div></div>
+        <div class="cd-note" id="cdNote"></div>
+      </div>
+    </div>
+    <div class="switch" role="group" aria-label="Ansicht">
+      <button type="button" data-v="woche" aria-pressed="true">Meine Woche <small id="swW"></small></button>
+      <button type="button" data-v="monat" aria-pressed="false">Mein Monat <small id="swM"></small></button>
+    </div>
+    <div class="prog">
+      <div class="bar"><div class="fill" id="fill"></div></div>
+      <div class="stat"><span id="statL"></span><span id="statR"></span></div>
+    </div>
+  </section>
+
+  <!-- Ansicht -->
+  <div id="view"></div>
+
+  <!-- Aktionen: immer nur ein Bereich offen -->
+  <div class="actions">
+    <button type="button" class="act" data-p="pAdd" aria-expanded="false"><i>+</i>Termin eintragen</button>
+    <button type="button" class="act" data-p="pContent" aria-expanded="false"><i>▶</i>Content-Woche</button>
+    <button type="button" class="act" data-p="pPattern" aria-expanded="false"><i>✿</i>Muster</button>
+  </div>
+
+  <section class="card panel" id="pAdd" hidden>
+    <h2>Termin eintragen</h2>
+    <p class="sub">Schreib ihn in deinen Worten. Du prüfst die Felder, dann ein Klick.</p>
+    <form class="row" id="addForm">
+      <input class="field" id="addText" type="text" autocomplete="off" placeholder="z. B. Orthopäde am 15.12. um 10:30, wichtig" aria-label="Termin beschreiben">
+      <button class="btn" id="addBtn" type="submit">Felder ausfüllen</button>
+    </form>
+    <div id="pv" hidden>
+      <div class="grid">
+        <label class="wide">Titel<input id="pvTitle" type="text"></label>
+        <label>Datum<input id="pvDate" type="date"></label>
+        <label>Beginn<input id="pvStart" type="time"></label>
+        <label>Ende<input id="pvEnd" type="time"></label>
+        <label>Kategorie<select id="pvCat"><option value="arzt">Arzt</option><option value="arbeit">Arbeit</option><option value="studium">Studium</option><option value="content">Content</option><option value="privat">Privat</option></select></label>
+        <label class="wide">Ort<input id="pvLoc" type="text"></label>
+      </div>
+      <label class="chk"><input id="pvImp" type="checkbox">Besonders wichtig (2 Erinnerungen mehr)</label>
+      <div class="rems" id="pvRems"></div>
+      <div class="row"><button class="btn" id="saveBtn" type="button">In Google Kalender eintragen</button><button class="btn ghost" id="pvCancel" type="button">Verwerfen</button></div>
+      <div class="msg" id="pvMsg"></div>
+    </div>
+  </section>
+
+  <section class="card panel" id="pContent" hidden>
+    <h2>Content-Woche</h2>
+    <p class="sub" id="cSub">Deine Posts dieser Woche. Plan aus deinem Content-Chat hier einfügen, und jeder Post landet als Termin in deinem Kalender.</p>
+    <div class="cweek" id="cWeek"></div>
+    <div class="row" style="align-items:center">
+      <label class="cat-dd" for="cTarget">Für</label>
+      <select class="field" id="cTarget" style="flex:0 1 220px"><option value="0">diese Woche</option><option value="1">nächste Woche</option></select>
+    </div>
+    <textarea class="field" id="cText" style="margin-top:10px;width:100%" placeholder="z. B.&#10;Mo 18:00 Reel: Protein-Zimtschnecken&#10;Mi 12:00 TikTok: Day in my life (lang)&#10;Fr Story: Umfrage nächstes Rezept&#10;So 17:00 Karussell: 3 Gym-Tipps"></textarea>
+    <div class="row" style="margin-top:10px"><button class="btn" id="cRead" type="button">Plan lesen</button></div>
+    <ul class="cp-list" id="cList"></ul>
+    <div class="row" id="cSaveRow" hidden style="margin-top:12px"><button class="btn" id="cSave" type="button">Posts eintragen</button></div>
+    <div class="msg" id="cMsg"></div>
+  </section>
+
+  <section class="card panel" id="pPattern" hidden>
+    <h2>Muster</h2>
+    <p class="sub" id="patSub"></p>
+    <div class="cat-grid" id="catGrid"></div>
+    <div class="row" style="margin-top:14px"><button class="btn ghost" id="patReset" type="button">Zurück zum aktuellen Muster</button></div>
+  </section>
+
+  <section class="card" aria-label="So funktioniert es">
+    <div class="info">
+      <div><h3>Erinnerungen</h3><p>2 Tage, 1 Tag und 2 Std. vorher. Bei „wichtig“ zusätzlich 3 Tage und 30 Min. Content-Posts: 1 Tag und 2 Std.</p></div>
+      <div><h3>Auch wenn die Seite zu ist</h3><p>Die Erinnerungen stehen im Google-Termin. Die Google-Kalender-App schickt sie aufs Handy.</p></div>
+      <div><h3>Abhaken</h3><p>Haken bleiben in diesem Browser gespeichert. Der Termin in Google bleibt unverändert.</p></div>
+      <div><h3>Aus dem Chat</h3><p>Sag Claude: „Trag meinen Content-Plan in den Kalender ein.“ Die Posts erscheinen hier automatisch.</p></div>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+{
+const SERVER="Google Calendar";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad=n=>String(n).padStart(2,"0");
+const sod=d=>{const x=new Date(d);x.setHours(0,0,0,0);return x};
+const addD=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const monday=d=>{const x=sod(d);return addD(x,-((x.getDay()+6)%7))};
+const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const loc=d=>`${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+const fT=d=>d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+const fD=(d,o)=>d.toLocaleDateString("de-DE",o);
+const isoWeek=d=>{const x=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const n=x.getUTCDay()||7;x.setUTCDate(x.getUTCDate()+4-n);const y=new Date(Date.UTC(x.getUTCFullYear(),0,1));return Math.ceil(((x-y)/864e5+1)/7)};
+const store={get(k,f){try{const v=localStorage.getItem(k);return v==null?f:JSON.parse(v)}catch(e){return f}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+/* ---------- Kategorien ---------- */
+const CATS={arzt:{n:"Arzt",color:"11"},arbeit:{n:"Arbeit",color:"7"},studium:{n:"Studium",color:"5"},content:{n:"Content",color:"6"},privat:{n:"Privat",color:"3"}};
+const COLOR2CAT={"11":"arzt","4":"arzt","7":"arbeit","9":"arbeit","5":"studium","6":"content","3":"privat","1":"privat"};
+const KW={arzt:/arzt|ärzt|ortho|augen|zahn|therap|physio|praxis|klinik|doktor|\bdr\.|einlage|labor|impf/i,
+ content:/^content:|\breel|tiktok|instagram|\binsta\b|\bstory\b|stories|karussell|\bdreh|filmen|schneiden|\bschnitt|upload|\bugc\b|caption|alicia in flow|youtube/i,
+ studium:/akad|klausur|\buni\b|studium|lern|vorlesung|seminar|prüfung|assignment|modul|hausarbeit/i,
+ arbeit:/hpt|dienst|arbeit|team|lebenshilfe|förder|elterngespräch|konferenz|praktikant|vhs|hausunterricht|colorflow|kunde|meeting/i};
+const catOf=e=>{if(e.colorId&&COLOR2CAT[e.colorId])return COLOR2CAT[e.colorId];const t=`${e.title} ${e.location||""} ${e.description||""}`;for(const k of["arzt","content","studium","arbeit"])if(KW[k].test(t))return k;return"privat"};
+const cv=c=>`var(--c-${c})`;
+
+/* ---------- Muster: 5 Konzepte × 3 Farben, jede Phase gilt 4 Wochen ---------- */
+const svgUrl=s=>`url("data:image/svg+xml,${encodeURIComponent(s)}")`;
+const rng=s=>()=>{s=(s*16807)%2147483647;return(s-1)/2147483646};
+function flowers(base,petal,center,leaf){const fl=(cx,cy,r,rot)=>{let g=`<g transform="translate(${cx} ${cy}) rotate(${rot})">`;
+  if(leaf)g+=`<ellipse cx="${r*1.95}" cy="${r*.5}" rx="${r*1.05}" ry="${r*.42}" fill="${leaf}" transform="rotate(25)"/><ellipse cx="${-r*1.9}" cy="${r*.6}" rx="${r*.95}" ry="${r*.38}" fill="${leaf}" transform="rotate(-20)"/>`;
+  for(let i=0;i<5;i++){const a=(i*72)*Math.PI/180;g+=`<ellipse cx="${(Math.cos(a)*r).toFixed(1)}" cy="${(Math.sin(a)*r).toFixed(1)}" rx="${(r*.78).toFixed(1)}" ry="${(r*.62).toFixed(1)}" transform="rotate(${i*72} ${(Math.cos(a)*r).toFixed(1)} ${(Math.sin(a)*r).toFixed(1)})" fill="${petal}"/>`}
+  return g+`<circle r="${(r*.55).toFixed(1)}" fill="${center}"/><circle r="${(r*.22).toFixed(1)}" fill="${petal}" opacity=".35"/></g>`};
+ return svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180"><rect width="180" height="180" fill="${base}"/>${fl(45,45,13,8)}${fl(135,135,13,40)}${fl(135,45,7,20)}${fl(45,135,7,60)}<circle cx="90" cy="90" r="3.5" fill="${petal}"/><circle cx="0" cy="90" r="3.5" fill="${petal}"/><circle cx="180" cy="90" r="3.5" fill="${petal}"/><circle cx="90" cy="0" r="3.5" fill="${petal}"/><circle cx="90" cy="180" r="3.5" fill="${petal}"/></svg>`)}
+function aquarell(base,cols,op,seed){const size=420,r=rng(seed);let c="";for(let i=0;i<13;i++){const x=r()*size,y=r()*size,rad=22+r()*60,col=cols[i%cols.length];
+  for(const dx of[0,-size,size])for(const dy of[0,-size,size]){if((dx||dy)&&(x+dx+rad<0||x+dx-rad>size||y+dy+rad<0||y+dy-rad>size))continue;
+   c+=`<circle cx="${(x+dx).toFixed(1)}" cy="${(y+dy).toFixed(1)}" r="${rad.toFixed(1)}" fill="${col}" fill-opacity="${op}" stroke="${col}" stroke-opacity="${Math.min(1,op*1.5)}" stroke-width="3"/>`}}
+ return svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${size}" height="${size}" fill="${base}"/><defs><filter id="w" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="3" seed="${seed}"/><feDisplacementMap in="SourceGraphic" scale="20"/><feGaussianBlur stdDeviation="1.2"/></filter></defs><g filter="url(#w)">${c}</g></svg>`)}
+const dots=(dot,base,s=100,r=6)=>`radial-gradient(circle,${dot} ${r}px,transparent ${r+1}px) 0 0/${s}px ${s*.92}px,radial-gradient(circle,${dot} ${r}px,transparent ${r+1}px) ${s/2}px ${s*.46}px/${s}px ${s*.92}px,${base}`;
+const stripes=(a,b,w1=52,w2=64)=>`repeating-linear-gradient(90deg,${a} 0 ${w1}px,${b} ${w1}px ${w1+w2}px)`;
+const BUB='url("bubbles.jpg") center/cover no-repeat,#eef0f6';
+const CONCEPTS=[
+ {n:"Punkte",v:[
+  {n:"Creme & Bordeaux",bg:dots("#64000a","#f3e6d6"),card:"#fffaf3",ink:"#3a0a12",accent:"#7a0c1a"},
+  {n:"Rosa & Bordeaux",bg:dots("#7d1120","#ffd6ec"),card:"#fff7fb",ink:"#45091a",accent:"#7d1120"},
+  {n:"Schwarz-Weiß",bg:dots("#141414","#f7f5f0"),card:"#ffffff",ink:"#141414",accent:"#141414"}]},
+ {n:"Streifen",v:[
+  {n:"Bordeaux & Rosa",bg:stripes("#7d1120","#ffaddb"),card:"#fff6fa",ink:"#45091a",accent:"#7d1120"},
+  {n:"Schwarz-Weiß",bg:stripes("#141414","#f7f5f0"),card:"#ffffff",ink:"#141414",accent:"#141414"},
+  {n:"Creme & Rot",bg:stripes("#b3132b","#f3e6d6",44,56),card:"#fffaf3",ink:"#3a0a12",accent:"#a3112a"}]},
+ {n:"Seifenblasen",v:[
+  {n:"Perlmutt",bg:BUB,card:"rgba(255,255,255,.86)",ink:"#2b2340",accent:"#7b55d6"},
+  {n:"Rosé-Perlmutt",bg:BUB,card:"rgba(255,250,252,.88)",ink:"#45091a",accent:"#c2185b",tint:"#ff9cc5",blend:"multiply",tintop:.42},
+  {n:"Schwarz-Weiß",bg:BUB,card:"rgba(255,255,255,.9)",ink:"#141414",accent:"#141414",tint:"#000",blend:"saturation",tintop:1}]},
+ {n:"Blumen",v:[
+  {n:"Creme & rote Blüten",bg:flowers("#f3e6d6","#9c0f22","#f0bd4f"),card:"#fffaf3",ink:"#3a0a12",accent:"#7a0c1a"},
+  {n:"Rosa & Grün",bg:flowers("#ffd6ec","#d9486a","#fff1a8","#5c8a5a"),card:"#fff8fb",ink:"#45091a",accent:"#b0204a"},
+  {n:"Schwarz-Weiß",bg:flowers("#141414","#f7f5f0","#141414"),card:"#ffffff",ink:"#141414",accent:"#141414",ring:"rgba(255,255,255,.35)"}]},
+ {n:"Aquarellkreise",v:[
+  {n:"Beeren",bg:aquarell("#f6ece0",["#c0405a","#e8899a","#8a1426","#f3b5a8"],.42,11),card:"#fffaf3",ink:"#3a0a12",accent:"#8a1426"},
+  {n:"Pfirsich",bg:aquarell("#fff3e8",["#f4a38c","#e8738a","#f7c59f","#d9485f"],.45,23),card:"#fffaf6",ink:"#4a1610",accent:"#c2364f"},
+  {n:"Tusche",bg:aquarell("#fafafa",["#141414","#555","#8a8a8a"],.3,37),card:"#ffffff",ink:"#141414",accent:"#141414"}]}];
+const weekIdx=Math.floor((monday(new Date())-new Date(2024,0,1))/(7*864e5));
+const phase=Math.floor(weekIdx/4),phaseWeek=weekIdx%4+1,phaseEnd=addD(monday(new Date()),(4-phaseWeek)*7+6);
+const CUR=[phase%5,Math.floor(phase/5)%3];let shown=[...CUR];
+function applyPattern(ci,vi){const v=CONCEPTS[ci].v[vi],r=document.documentElement.style;shown=[ci,vi];
+ r.setProperty("--pattern",v.bg);r.setProperty("--card",v.card);r.setProperty("--ink",v.ink);r.setProperty("--accent",v.accent);r.setProperty("--ring",v.ring||"rgba(255,255,255,.55)");
+ r.setProperty("--tint",v.tint||"transparent");r.setProperty("--blend",v.blend||"normal");r.setProperty("--tintop",v.tintop||0);
+ const isCur=ci===CUR[0]&&vi===CUR[1];
+ $("patSub").textContent=isCur?`Aktuell: ${CONCEPTS[ci].n} · ${v.n} – Woche ${phaseWeek} von 4. Ab ${fD(addD(phaseEnd,1),{day:"numeric",month:"long"})} kommt ein neues Muster.`:`Vorschau: ${CONCEPTS[ci].n} · ${v.n}. Aktuell ist ${CONCEPTS[CUR[0]].n} · ${CONCEPTS[CUR[0]].v[CUR[1]].n}.`;
+ renderCatalog()}
+function renderCatalog(){$("catGrid").innerHTML=CONCEPTS.map((c,ci)=>`<div class="crow"><h3>${c.n}</h3>${c.v.map((v,vi)=>`<button type="button" class="sw${ci===shown[0]&&vi===shown[1]?" sel":""}${ci===CUR[0]&&vi===CUR[1]?" cur":""}" data-c="${ci}" data-v="${vi}" style="--swb:${esc(v.bg)};--swf:${v.blend==="saturation"?"grayscale(1)":v.tint?"sepia(.35) saturate(2.2) hue-rotate(-35deg)":"none"}" aria-label="${c.n} ${v.n}"><span>${v.n}</span></button>`).join("")}</div>`).join("")}
+$("catGrid").addEventListener("click",e=>{const b=e.target.closest(".sw");if(b)applyPattern(+b.dataset.c,+b.dataset.v)});
+$("patReset").addEventListener("click",()=>applyPattern(CUR[0],CUR[1]));
+
+/* ---------- Daten ---------- */
+let mcp=null,sample=null,mode="loading",view=store.get("ta-view","woche"),monthCur=new Date(),selDay=null,updatedAt=null;
+const watches={},byRange={};let events=[];
+const done=new Set(store.get("ta-done",[]));
+const doneKey=e=>`${e.id}|${ymd(e.start)}`;
+const tval=v=>!v?null:typeof v==="string"?v:(v.dateTime||v.date_time||v.date||null);
+const isEv=o=>o&&typeof o==="object"&&!Array.isArray(o)&&("start" in o||"startTime" in o)&&("summary" in o||"id" in o);
+function findEvents(p){if(typeof p==="string"){try{p=JSON.parse(p)}catch(e){return[]}}const out=[];
+ (function walk(x,d){if(!x||typeof x!=="object"||d>6)return;if(Array.isArray(x)){const ev=x.filter(isEv);if(ev.length){out.push(...ev);return}x.forEach(y=>walk(y,d+1));return}for(const k in x)walk(x[k],d+1)})(p,0);
+ return out.map(norm).filter(Boolean)}
+function norm(o){const sr=tval(o.start??o.startTime);if(!sr||o.status==="cancelled")return null;const allDay=/^\d{4}-\d{2}-\d{2}$/.test(sr);
+ const start=allDay?new Date(sr+"T00:00:00"):new Date(sr);if(isNaN(start))return null;const er=tval(o.end??o.endTime);
+ let end=er?(/^\d{4}-\d{2}-\d{2}$/.test(er)?new Date(er+"T00:00:00"):new Date(er)):null;if(!end||isNaN(end))end=allDay?addD(start,1):new Date(start.getTime()+36e5);
+ const ov=o.reminders&&Array.isArray(o.reminders.overrides)?o.reminders.overrides.map(r=>+r.minutes).filter(n=>!isNaN(n)):null;
+ const e={id:String(o.id??sr+(o.summary||"")),title:String(o.summary??o.title??"(ohne Titel)").replace(/^content:\s*/i,""),rawTitle:String(o.summary??""),start,end,allDay,location:o.location?String(o.location):"",description:o.description?String(o.description).replace(/<[^>]*>/g," "):"",colorId:o.colorId!=null?String(o.colorId):"",reminders:ov};
+ e.cat=catOf({...e,title:e.rawTitle||e.title});return e}
+function merge(){const m=new Map();Object.values(byRange).flat().forEach(e=>m.set(e.id+"|"+(+e.start),e));events=[...m.values()].sort((a,b)=>a.start-b.start)}
+
+function demo(){const t=sod(new Date());const mk=(id,title,d,h,m,dur,lc,cat)=>{const s=addD(t,d);s.setHours(h,m);return{id,title,start:s,end:new Date(s.getTime()+dur*6e4),allDay:false,location:lc,cat}};
+ return[mk("d1","Orthopäde – Einlagen",1,10,30,45,"Orthopädie-Praxis","arzt"),mk("d2","Dienst HPT",2,8,0,420,"Freising","arbeit"),mk("d3","Reel: Protein-Zimtschnecken",2,18,0,30,"","content"),
+ mk("d4","AKAD Lerneinheit BWL",3,18,0,90,"Zuhause","studium"),mk("d5","Augenarzt-Kontrolle",5,16,0,30,"Augenarztpraxis","arzt"),mk("d6","TikTok: Day in my life",4,12,0,30,"","content"),
+ mk("d7","Förderkonferenz",6,13,30,60,"HPT","arbeit"),mk("d8","Abendessen mit Freunden",7,19,30,150,"Innenstadt","privat"),mk("d9","Online-Klausur",11,9,0,120,"Online","studium"),mk("d10","Karussell: 3 Gym-Tipps",9,17,0,30,"","content")]}
+
+/* ---------- Verbindung ---------- */
+function setStatus(kind,text,btn,fn){const s=$("status");s.className="pill"+(kind==="live"?" live":"");s.innerHTML=`<i></i><span>${esc(text)}</span>`+(btn?`<button type="button" id="connBtn">${esc(btn)}</button>`:"");if(btn)$("connBtn").addEventListener("click",fn||(()=>startWatches(true)))}
+function useDemo(text,btn){mode="demo";events=demo();setStatus("demo",text,btn);renderAll()}
+function onErr(e){const c=e&&e.code;
+ if(c==="needs_reauth")return useDemo("Google Kalender neu verbinden: claude.ai → Einstellungen → Konnektoren","Erneut versuchen");
+ if(c==="server_not_connected"||c==="server_not_found"||c==="selection_required")return useDemo("Google Kalender in claude.ai → Einstellungen → Konnektoren hinzufügen","Erneut versuchen");
+ if(c==="not_in_manifest"||c==="approval_required"||c==="blocked_by_policy"||c==="consent_required")return useDemo("Kalender-Zugriff noch nicht erlaubt – Beispieltermine","Zugriff erlauben");
+ if(c==="not_granted"||c==="capability_disabled"||c==="capability_removed")return useDemo("Kalender hier nicht verfügbar – öffne die Seite auf claude.ai");
+ if(mode==="live"){setStatus("live",`Google gerade nicht erreichbar – Stand ${updatedAt?fT(updatedAt):""}`);return}
+ useDemo("Kalender konnte nicht geladen werden – Beispieltermine","Erneut versuchen")}
+function watchRange(from,to){const key=ymd(from)+"_"+ymd(to);if(watches[key]||!mcp)return;
+ const input={startTime:`${ymd(from)}T00:00:00`,endTime:`${ymd(to)}T00:00:00`,orderBy:"startTime",pageSize:250};
+ watches[key]=mcp.watchTool(SERVER,"list_events",input,ev=>{
+  if(ev.type==="data"){byRange[key]=findEvents(ev.result&&ev.result.payload);mode="live";merge();updatedAt=ev.result&&ev.result.cache?new Date(ev.result.cache.storedAt):new Date();setStatus("live",`Live mit Google Kalender · ${fT(updatedAt)}`);renderAll()}
+  else onErr(ev.error)},{refetchInterval:300000,cache:{staleTime:60000,gcTime:900000}})}
+function monthRange(d){const f=new Date(d.getFullYear(),d.getMonth(),1);const s=monday(f);return[s,addD(s,42)]}
+async function startWatches(click){if(!mcp)return useDemo("Kalender hier nicht verfügbar – Beispieltermine");
+ if(click){try{await mcp.callTool(SERVER,"list_calendars",{})}catch(e){if(e&&e.code!=="tool_error")return onErr(e)}Object.keys(watches).forEach(k=>{watches[k]();delete watches[k]})}
+ const m=monday(new Date());watchRange(m,addD(m,14));const[a,b]=monthRange(new Date());watchRange(a,b)}
+
+/* ---------- Anzeige ---------- */
+const onDay=d=>{const a=sod(d),b=addD(a,1);return events.filter(e=>e.start<b&&e.end>a)};
+const rel=d=>{const n=Math.round((sod(d)-sod(new Date()))/864e5);return n===0?"heute":n===1?"morgen":n===2?"übermorgen":n<0?"läuft":`in ${n} Tagen`};
+const tTxt=e=>e.allDay?"ganztägig":`${fT(e.start)}–${fT(e.end)}`;
+function renderNow(){const now=new Date(),nx=events.find(e=>e.end>now&&!(e.allDay&&e.start<now)&&!done.has(doneKey(e)));const lab=$("nowLabel");
+ if(!nx){lab.style.removeProperty("--cc");lab.innerHTML="<i></i>Jetzt dran";$("nowTitle").textContent=mode==="loading"?"Einen Moment …":"Nichts mehr offen";$("nowMeta").textContent=mode==="loading"?"":"Alles erledigt oder frei. Zeit für dich.";["cdD","cdH","cdM"].forEach(i=>$(i).textContent="0");$("cdNote").textContent="";return}
+ lab.style.setProperty("--cc",cv(nx.cat));lab.innerHTML=`<i></i>Jetzt dran · ${esc(CATS[nx.cat].n)}`;$("nowTitle").textContent=nx.title;
+ $("nowMeta").textContent=`${fD(nx.start,{weekday:"long",day:"numeric",month:"long"})} · ${tTxt(nx)}${nx.location?" · "+nx.location:""}`;
+ const ms=Math.max(0,nx.start-now);$("cdD").textContent=Math.floor(ms/864e5);$("cdH").textContent=Math.floor(ms%864e5/36e5);$("cdM").textContent=Math.floor(ms%36e5/6e4);
+ $("cdNote").textContent=nx.start<=now?"läuft gerade":`${rel(nx.start)}${nx.allDay?"":" um "+fT(nx.start)}`}
+function renderProg(){const m=monday(new Date()),wk=events.filter(e=>e.start>=m&&e.start<addD(m,7)),d=wk.filter(e=>done.has(doneKey(e))).length,p=wk.length?Math.round(d/wk.length*100):0;
+ $("fill").style.width=p+"%";$("statL").innerHTML=`<b>${d} von ${wk.length}</b> diese Woche erledigt`;$("statR").textContent=wk.length-d?`${wk.length-d} offen`:wk.length?"Woche geschafft":"freie Woche";
+ $("swW").textContent=`${fD(m,{day:"numeric",month:"numeric"})}–${fD(addD(m,6),{day:"numeric",month:"numeric"})}`;$("swM").textContent=fD(monthCur,{month:"long"})}
+function dayCard(d,i,expanded){const today=sod(new Date()),l=onDay(d),isT=+d===+today,past=d<today,dn=l.filter(e=>done.has(doneKey(e))).length,show=expanded?l:l.slice(0,4);
+ return`<article class="card day${past?" past":""}${isT?" today":""}" style="animation-delay:${i*.04}s" ${isT?'id="todayCard"':""}>
+ <div class="dh"><div class="dn">${d.getDate()}</div><div class="dw">${esc(fD(d,{weekday:"long"}))}<small>${isT?"heute":esc(fD(d,{day:"numeric",month:"long"}))}</small></div><div class="dots">${l.map(e=>`<i class="${done.has(doneKey(e))?"on":""}"></i>`).join("")}</div></div>
+ ${l.length?`<ul class="items">${show.map(e=>`<li><label class="it" style="--cc:${cv(e.cat)}"><input type="checkbox" data-k="${esc(doneKey(e))}" ${done.has(doneKey(e))?"checked":""}><span><span class="it-m">${e.allDay?"ganztägig":esc(fT(e.start))} · ${esc(CATS[e.cat].n)}</span><span class="it-t">${esc(e.title)}</span></span></label></li>`).join("")}</ul>`:'<div class="free">frei – Zeit für dich</div>'}
+ ${l.length>4&&!expanded?`<button type="button" class="more" data-more="${ymd(d)}">+ ${l.length-4} weitere</button>`:""}
+ ${l.length&&dn===l.length?'<div class="alldone">Alles erledigt – stark!</div>':""}</article>`}
+let expandedDays=new Set();
+function sumCard(){const m=monday(new Date()),wk=events.filter(e=>e.start>=m&&e.start<addD(m,7)),by={};wk.forEach(e=>by[e.cat]=(by[e.cat]||0)+1);
+ return`<article class="card day sumcard" style="animation-delay:.3s"><h3>Woche im Blick</h3><p>${wk.length} ${wk.length===1?"Termin":"Termine"}${mode==="demo"?" (Beispiel)":""}</p>
+ <div class="cnt">${Object.keys(CATS).filter(k=>by[k]).map(k=>`<span style="--cc:${cv(k)}"><i></i>${by[k]} ${CATS[k].n}</span>`).join("")||"<span>frei</span>"}</div>
+ <button type="button" data-open="pAdd">+ Termin eintragen</button><button type="button" data-open="pContent">Content-Woche planen</button><button type="button" data-open="pPattern">Muster ansehen</button></article>`}
+function renderWeek(){const m=monday(new Date());$("view").innerHTML=`<div class="week">${[0,1,2,3,4,5,6].map(i=>dayCard(addD(m,i),i,expandedDays.has(ymd(addD(m,i))))).join("")}${sumCard()}</div>`}
+function renderMonth(){const f=new Date(monthCur.getFullYear(),monthCur.getMonth(),1),s=monday(f),today=sod(new Date());
+ let g="";for(let i=0;i<42;i++){const d=addD(s,i);if(i===35&&d.getMonth()!==f.getMonth())break;const l=onDay(d);
+  g+=`<button type="button" class="md${d.getMonth()!==f.getMonth()?" out":""}${+d===+today?" today":""}${selDay&&+d===+selDay?" sel":""}" data-day="${ymd(d)}" aria-label="${esc(fD(d,{day:"numeric",month:"long"}))}: ${l.length} Termine"><b>${d.getDate()}</b>${l[0]?`<span class="mt">${esc(l[0].title)}</span>`:""}<span class="md-dots">${l.slice(0,5).map(e=>`<i style="--cc:${cv(e.cat)}"></i>`).join("")}</span></button>`}
+ $("view").innerHTML=`<section class="card"><div class="mtop"><h2>${esc(fD(f,{month:"long",year:"numeric"}))}</h2><div class="nav"><button type="button" id="mPrev" aria-label="Voriger Monat">‹</button><button type="button" id="mToday">Heute</button><button type="button" id="mNext" aria-label="Nächster Monat">›</button></div></div>
+ <div class="mh">${["Mo","Di","Mi","Do","Fr","Sa","So"].map(x=>`<div>${x}</div>`).join("")}</div><div class="mg" style="margin-top:6px">${g}</div>
+ <p class="sum" style="margin:12px 0 0;color:var(--soft);font-weight:700;font-size:14px">Tipp auf einen Tag, um ihn als Liste zu sehen.</p></section>${selDay?`<div class="mdetail">${dayCard(selDay,0,true)}</div>`:""}`;
+ $("mPrev").onclick=()=>moveMonth(-1);$("mNext").onclick=()=>moveMonth(1);$("mToday").onclick=()=>{monthCur=new Date();selDay=sod(new Date());renderAll()}}
+function moveMonth(n){monthCur=new Date(monthCur.getFullYear(),monthCur.getMonth()+n,1);selDay=null;const[a,b]=monthRange(monthCur);watchRange(a,b);renderAll()}
+function renderContent(){const m=monday(new Date()),l=events.filter(e=>e.cat==="content"&&e.start>=m&&e.start<addD(m,7));
+ $("cWeek").innerHTML=l.length?l.map(e=>`<div class="cw"><span style="width:12px;height:12px;border-radius:50%;background:var(--c-content);flex:none"></span><span><small>${esc(fD(e.start,{weekday:"short"}))} · ${e.allDay?"ganztägig":esc(fT(e.start))}${done.has(doneKey(e))?" · gepostet":""}</small>${esc(e.title)}</span></div>`).join(""):'<div class="free">Noch keine Posts für diese Woche im Kalender.</div>'}
+function renderAll(){document.querySelector(".actions").classList.toggle("inweek",view==="woche");document.querySelectorAll(".switch button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===view));renderNow();renderProg();view==="monat"?renderMonth():renderWeek();renderContent()}
+
+/* ---------- Bedienung ---------- */
+document.querySelector(".switch").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;view=b.dataset.v;store.set("ta-view",view);if(view==="monat"&&!selDay)selDay=sod(new Date());renderAll()});
+$("view").addEventListener("change",e=>{const c=e.target.closest("input[data-k]");if(!c)return;c.checked?done.add(c.dataset.k):done.delete(c.dataset.k);store.set("ta-done",[...done].slice(-500));if(c.checked)toast("Abgehakt");setTimeout(renderAll,250)});
+$("view").addEventListener("click",e=>{const o=e.target.closest("[data-open]");if(o){openPanel(o.dataset.open);return}const m=e.target.closest("[data-more]");if(m){expandedDays.add(m.dataset.more);renderWeek();return}
+ const d=e.target.closest("[data-day]");if(d){const[y,mo,da]=d.dataset.day.split("-").map(Number);selDay=new Date(y,mo-1,da);renderMonth();setTimeout(()=>{const x=document.querySelector(".mdetail");if(x)x.scrollIntoView({behavior:"smooth",block:"nearest"})},50)}});
+function openPanel(id,toggle){const p=$(id),open=!(toggle&&!p.hidden);document.querySelectorAll(".panel").forEach(x=>x.hidden=true);document.querySelectorAll(".act").forEach(x=>x.setAttribute("aria-expanded",String(open&&x.dataset.p===id)));if(open){p.hidden=false;p.scrollIntoView({behavior:"smooth",block:"start"})}}
+document.querySelector(".actions").addEventListener("click",e=>{const b=e.target.closest(".act");if(b)openPanel(b.dataset.p,true)});
+function toast(t){const el=$("toast");el.textContent=t;el.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove("on"),2600)}
+
+/* ---------- Termin eintragen ---------- */
+const remList=(imp,cat)=>cat==="content"?[1440,120]:imp?[4320,2880,1440,120,30]:[2880,1440,120];
+const remName=m=>m>=1440?`${m/1440} ${m===1440?"Tag":"Tage"} vorher`:m>=60?`${m/60} Std. vorher`:`${m} Min. vorher`;
+const showRems=()=>{$("pvRems").innerHTML=remList($("pvImp").checked,$("pvCat").value).map(m=>`<span>${remName(m)}</span>`).join("")};
+$("pvImp").addEventListener("change",showRems);$("pvCat").addEventListener("change",showRems);
+const plus1h=st=>`${pad((+st.slice(0,2)+1)%24)}:${st.slice(3)}`;
+function localParse(t){const m=t.match(/(\d{1,2})\.(\d{1,2})\.?(\d{2,4})?/),rest=m?t.replace(m[0]," "):t,tm=rest.match(/(\d{1,2})[:.](\d{2})/)||rest.match(/(\d{1,2})\s*uhr/i);const now=new Date();let date=ymd(now);
+ if(m){let y=m[3]?+m[3]:now.getFullYear();if(y<100)y+=2000;let d=new Date(y,+m[2]-1,+m[1]);if(!m[3]&&d<sod(now))d=new Date(y+1,+m[2]-1,+m[1]);date=ymd(d)}
+ const start=tm&&+tm[1]<24?`${pad(+tm[1])}:${pad(tm[2]?+tm[2]:0)}`:"";
+ const title=t.replace(/(am\s*)?\d{1,2}\.\d{1,2}\.?(\d{2,4})?/i,"").replace(/(um\s*)?\d{1,2}([:.]\d{2})?\s*uhr/i,"").replace(/(um\s*)?\d{1,2}:\d{2}/,"").replace(/,?\s*wichtig/i,"").replace(/\s{2,}/g," ").replace(/[,\s]+$/,"").trim();
+ return{title:title||t,date,start,end:start?plus1h(start):"",location:"",category:catOf({title,location:"",description:""}),important:/wichtig/i.test(t)}}
+$("addForm").addEventListener("submit",async e=>{e.preventDefault();const t=$("addText").value.trim();if(!t){$("addText").focus();return}
+ const btn=$("addBtn");btn.disabled=true;btn.textContent="Lese …";let d=null;const now=new Date();
+ if(sample){try{d=await sample.json(`Heute ist ${fD(now,{weekday:"long"})}, ${ymd(now)} (Europe/Berlin). Antworte NUR mit JSON:
+{"title":string (kurz, ohne Datum/Zeit),"date":"YYYY-MM-DD","start":"HH:MM" oder "","end":"HH:MM" oder "","location":string,"category":"arzt"|"arbeit"|"studium"|"content"|"privat","important":boolean}
+Datum ohne Jahr = nächstes kommendes. Ohne Ende: Start + 1 Std. content = Reels, TikTok, Instagram, Posts, Drehen, Schneiden. important nur wenn "wichtig" o. Ä. im Text.
+Text: ${JSON.stringify(t)}`,{modelTier:"quick"})}catch(x){d=null}}
+ if(!d||typeof d!=="object"||!d.date)d=localParse(t);
+ $("pvTitle").value=d.title||"";$("pvDate").value=d.date;$("pvStart").value=d.start||"";$("pvEnd").value=d.end||"";$("pvLoc").value=d.location||"";$("pvCat").value=CATS[d.category]?d.category:"privat";$("pvImp").checked=!!d.important;
+ showRems();$("pvMsg").textContent="";$("pv").hidden=false;$("saveBtn").disabled=false;$("saveBtn").textContent=mode==="live"?"In Google Kalender eintragen":"Als Beispiel zeigen (Kalender nicht verbunden)";btn.disabled=false;btn.textContent="Felder ausfüllen"});
+$("pvCancel").addEventListener("click",()=>{$("pv").hidden=true});
+function eventInput(f){const st=f.start,en=f.end||(st?plus1h(st):"");const imp=f.important;const rem=remList(imp,f.category);
+ const inp={summary:(f.category==="content"&&!/^content:/i.test(f.title)?"Content: ":"")+f.title,colorId:CATS[f.category].color,overrideReminders:rem.map(m=>({method:"popup",minutes:m}))};
+ if(st){inp.startTime=`${f.date}T${st}:00`;inp.endTime=`${f.date}T${en>st?en:plus1h(st)}:00`}else{inp.allDay=true;inp.startTime=`${f.date}T00:00:00`;inp.endTime=`${ymd(addD(new Date(f.date+"T00:00:00"),1))}T00:00:00`}
+ if(f.location)inp.location=f.location;if(f.description)inp.description=f.description;return{inp,rem}}
+function errText(e){const c=e&&e.code;return c==="server_unavailable"||c==="upstream_error"?"Unklar, ob es geklappt hat. Schau kurz in den Kalender, bevor du nochmal klickst.":c==="approval_required"||c==="not_in_manifest"?"Freigabe fehlt. Klick nochmal und erlaube den Zugriff.":c==="needs_reauth"?"Google Kalender neu verbinden: claude.ai → Einstellungen → Konnektoren.":`Hat nicht geklappt: ${String(e&&e.message||"unbekannter Fehler").slice(0,140)}`}
+function addLocal(f,rem){const s=new Date(`${f.date}T${f.start||"00:00"}:00`);const en=f.start?new Date(`${f.date}T${f.end||plus1h(f.start)}:00`):addD(s,1);events.push({id:"local"+Math.random(),title:f.title,start:s,end:en>s?en:new Date(+s+36e5),allDay:!f.start,location:f.location||"",cat:f.category,reminders:rem});events.sort((a,b)=>a.start-b.start)}
+$("saveBtn").addEventListener("click",async()=>{const msg=$("pvMsg"),f={title:$("pvTitle").value.trim()||"Termin",date:$("pvDate").value,start:$("pvStart").value,end:$("pvEnd").value,location:$("pvLoc").value.trim(),category:$("pvCat").value,important:$("pvImp").checked};
+ if(!f.date){msg.className="msg err";msg.textContent="Bitte ein Datum eintragen.";return}
+ const{inp,rem}=eventInput(f);
+ if(mode!=="live"){addLocal(f,rem);renderAll();msg.className="msg ok";msg.textContent="Als Beispiel angezeigt. Mit verbundenem Google Kalender wird er wirklich eingetragen.";return}
+ const btn=$("saveBtn");btn.disabled=true;btn.textContent="Trage ein …";
+ try{await mcp.callTool(SERVER,"create_event",inp);msg.className="msg ok";msg.textContent=`Eingetragen: ${f.title} · ${fD(new Date(f.date+"T12:00:00"),{weekday:"short",day:"numeric",month:"long"})} · ${rem.length} Erinnerungen.`;toast("Steht in deinem Google Kalender");$("addText").value="";btn.textContent="Erledigt";try{await mcp.invalidate(SERVER,"list_events")}catch(x){}}
+ catch(e){btn.disabled=false;btn.textContent="In Google Kalender eintragen";msg.className="msg err";msg.textContent=errText(e)}});
+
+/* ---------- Content-Plan ---------- */
+const WD={mo:0,montag:0,di:1,dienstag:1,mi:2,mittwoch:2,do:3,donnerstag:3,fr:4,freitag:4,sa:5,samstag:5,so:6,sonntag:6};
+$("cTarget").value=new Date().getDay()===0||new Date().getDay()===6?"1":"0";
+let plan=[];
+function localPlan(t,base){return t.split(/\n+/).map(s=>s.trim()).filter(Boolean).map(s=>{const w=s.toLowerCase().match(/^(montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag|mo|di|mi|do|fr|sa|so)\b\.?/);
+ const dm=s.match(/(\d{1,2})\.(\d{1,2})\./);let d=w?addD(base,WD[w[1]]):dm?new Date(base.getFullYear(),+dm[2]-1,+dm[1]):base;const tm=s.match(/(\d{1,2}):(\d{2})/);
+ const title=s.replace(/^(montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag|mo|di|mi|do|fr|sa|so)\b\.?:?\s*/i,"").replace(/\d{1,2}\.\d{1,2}\.\s*/,"").replace(/\d{1,2}:\d{2}\s*(uhr)?\s*/i,"").replace(/^[-–:,\s]+/,"").trim();
+ return{date:ymd(d),start:tm?`${pad(+tm[1])}:${tm[2]}`:"",title:title||s,on:true}})}
+$("cRead").addEventListener("click",async()=>{const t=$("cText").value.trim(),msg=$("cMsg");if(!t){$("cText").focus();return}
+ const base=addD(monday(new Date()),7*+$("cTarget").value),btn=$("cRead");btn.disabled=true;btn.textContent="Lese …";plan=null;
+ if(sample){try{const r=await sample.json(`Zerlege diesen Content-Wochenplan in einzelne Posts. Die Woche beginnt am Montag ${ymd(base)} (Europe/Berlin). Antworte NUR mit einem JSON-Array:
+[{"date":"YYYY-MM-DD","start":"HH:MM" oder "","title":"Format: Idee", z. B. "Reel: Protein-Zimtschnecken"}]
+Wochentage auf Daten dieser Woche abbilden. Keine Erfindungen, nur was im Plan steht.
+Plan: ${JSON.stringify(t)}`,{modelTier:"quick"});if(Array.isArray(r))plan=r.filter(x=>x&&x.date&&x.title).map(x=>({date:String(x.date),start:x.start?String(x.start):"",title:String(x.title),on:true}))}catch(x){plan=null}}
+ if(!plan||!plan.length)plan=localPlan(t,base);
+ btn.disabled=false;btn.textContent="Plan lesen";renderPlan();msg.className="msg";msg.textContent=`${plan.length} Posts erkannt. Prüfe sie kurz, dann eintragen.`});
+function renderPlan(){$("cList").innerHTML=plan.map((p,i)=>`<li><input type="checkbox" data-i="${i}" data-f="on" ${p.on?"checked":""} aria-label="Übernehmen"><input type="date" data-i="${i}" data-f="date" value="${esc(p.date)}"><input type="time" data-i="${i}" data-f="start" value="${esc(p.start)}"><input type="text" data-i="${i}" data-f="title" value="${esc(p.title)}"></li>`).join("");
+ $("cSaveRow").hidden=!plan.length;const n=plan.filter(p=>p.on).length;$("cSave").textContent=mode==="live"?`${n} Posts in Google Kalender eintragen`:`${n} Posts als Beispiel zeigen`;$("cSave").disabled=!n}
+$("cList").addEventListener("input",e=>{const x=e.target;if(x.dataset.i==null)return;plan[+x.dataset.i][x.dataset.f]=x.type==="checkbox"?x.checked:x.value;if(x.type==="checkbox")renderPlan()});
+$("cSave").addEventListener("click",async()=>{const msg=$("cMsg"),todo=plan.filter(p=>p.on&&p.date);if(!todo.length)return;const btn=$("cSave");btn.disabled=true;
+ if(mode!=="live"){todo.forEach(p=>addLocal({...p,category:"content",end:""},[1440,120]));renderAll();msg.className="msg ok";msg.textContent=`${todo.length} Posts als Beispiel angezeigt. Mit verbundenem Kalender werden sie wirklich eingetragen.`;btn.disabled=false;return}
+ let ok=0,fail=[];for(const p of todo){btn.textContent=`Trage ein … ${ok+fail.length+1} von ${todo.length}`;
+  try{await mcp.callTool(SERVER,"create_event",eventInput({...p,category:"content",end:"",important:false,description:"Content-Plan · Alicia in Flow"}).inp);ok++;p.on=false}catch(e){fail.push(p.title+": "+errText(e))}}
+ try{await mcp.invalidate(SERVER,"list_events")}catch(x){}
+ renderPlan();msg.className=fail.length?"msg err":"msg ok";msg.textContent=`${ok} von ${todo.length} Posts eingetragen.`+(fail.length?` Nicht geklappt: ${fail.join(" · ")}`:"");if(ok)toast(`${ok} Posts im Kalender`)});
+
+/* ---------- Start ---------- */
+const hr=new Date().getHours();$("hello").textContent=`${hr<11?"Guten Morgen":hr<17?"Hallo":hr<22?"Guten Abend":"Gute Nacht"}, Alicia · ${fD(new Date(),{weekday:"long",day:"numeric",month:"long"})} · KW ${isoWeek(new Date())}`;
+applyPattern(CUR[0],CUR[1]);renderAll();setInterval(renderNow,30000);
+if(matchMedia("(max-width:760px)").matches&&view==="woche")setTimeout(()=>{const t=$("todayCard");if(t)t.scrollIntoView({block:"center"})},400);
+if(window.claude&&typeof window.claude.use==="function"){
+ window.claude.use("sample").then(s=>{sample=s}).catch(()=>{});
+ window.claude.use("mcp").then(m=>{mcp=m;if(!m)return useDemo("Kalender hier nicht verfügbar – Beispieltermine");startWatches(false)}).catch(()=>useDemo("Kalender hier nicht verfügbar – Beispieltermine"));
+}else useDemo("Öffne die Seite auf claude.ai, um deinen Kalender zu sehen – Beispieltermine");
+}
+</script>
+</body>
+</html>

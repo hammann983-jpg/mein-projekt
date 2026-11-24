@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8"><title>Test: Google-Schicht mit simuliertem Google</title></head>
+<body>
+<p>Lädt index.html mit simuliertem Google (keine echten Anfragen). Ergebnis: <code>window.__calls</code>.</p>
+<script>
+// Simuliertes Google: Kalenderliste, Termine, Drive appDataFolder.
+const STUB=`<script>
+(()=>{
+const t0=new Date();t0.setHours(0,0,0,0);
+const at=(d,h,m)=>{const x=new Date(t0);x.setDate(x.getDate()+d);x.setHours(h,m);return x.toISOString()};
+const ev=(id,sum,d,h,m)=>({id,summary:sum,start:{dateTime:at(d,h,m)},end:{dateTime:at(d,h+1,m)}});
+const DATA={primary:[ev("p1","Mein Termin",0,23,0),ev("p2","Morgen früh",1,8,0)],fam:[ev("f1","Mama: Familienessen",1,18,0)],fabi:[ev("b1","Fabi: Training",2,19,0)]};
+const CALS=[{id:"test-alicia@example.com",summary:"Alicia",primary:true},{id:"fam",summary:"Familie"},{id:"fabi",summary:"Fabian"}];
+let drive=null;window.__calls=[];
+TERMIN_CONFIG.CLIENT_ID="test.apps.googleusercontent.com";
+TERMIN_CONFIG.USERS={"0fdb34067d27893619fea4550f6d602da2e1cc4a05af90aac9ea69e4efedbfae":{name:"Alicia",tabs:["ich","familie","fabi"]}};
+window.google={accounts:{oauth2:{initTokenClient:o=>({requestAccessToken:()=>setTimeout(()=>o.callback({access_token:"TEST",expires_in:3600}),10)}),revoke:()=>{}}}};
+const json=(o,s=200)=>Promise.resolve(new Response(JSON.stringify(o),{status:s,headers:{"Content-Type":"application/json"}}));
+window.fetch=(url,opt={})=>{url=String(url);__calls.push((opt.method||"GET")+" "+url.replace("https://www.googleapis.com/",""));
+ if(!(opt.headers&&opt.headers.Authorization==="Bearer TEST"))return json({error:{message:"kein Token"}},401);
+ if(url.includes("/calendarList"))return json({items:CALS});
+ let m=url.match(/\\/calendars\\/([^/]+)\\/events/);if(m){const id=decodeURIComponent(m[1]);return json({items:DATA[id==="test-alicia@example.com"?"primary":id]||[]})}
+ if(url.includes("/upload/drive/v3/files")&&opt.method==="POST"){drive=opt.body.split("\\r\\n\\r\\n")[2].split("\\r\\n")[0];return json({id:"F1"})}
+ if(url.includes("/upload/drive/v3/files/F1")){drive=opt.body;return json({id:"F1"})}
+ if(url.includes("alt=media"))return json(JSON.parse(drive));
+ if(url.includes("/drive/v3/files"))return json({files:drive?[{id:"F1"}]:[]});
+ return json({error:{message:"unbekannt"}},404)};
+window.__drive=()=>drive;
+})();
+<\/script>`;
+fetch("index.html").then(r=>r.text()).then(h=>{
+  const END="<\/script>";
+  h=h.replace('<script src="https://accounts.google.com/gsi/client" async defer>'+END,'').replace('<script src="google.js">'+END,STUB+'<script src="google.js">'+END);
+  document.open();document.write(h);document.close();
+});
+</script>
+</body></html>

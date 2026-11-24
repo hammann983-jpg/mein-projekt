@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8"><title>Tests: Kategorisierung</title>
+<style>body{font:16px/1.5 system-ui;margin:20px}.ok{color:#1f7a3a}.bad{color:#c0182f;font-weight:700}td,th{padding:3px 10px;text-align:left}</style></head>
+<body>
+<h1 id="sum">Tests laufen …</h1>
+<table id="t"><tr><th></th><th>Titel</th><th>Quelle</th><th>erwartet</th><th>Ergebnis</th><th>Regel</th></tr></table>
+<script src="kategorien.js"></script>
+<script>
+// [Titel, Quelle, erwartete Kategorie, erwartet unsicher (optional), Nutzerdaten (optional)]
+const T=[
+ ["Mitarbeitergespräch","ich","arbeit"],["Supervision","ich","arbeit"],["Dinner mit Fabi","ich","fabian"],
+ ["Reel drehen Zimtschnecken","ich","content"],["Mama Geburtstag","ich","familie"],["Orthopäde Einlagen","ich","persoenlich",false],
+ ["Frühdienst HPT","ich","arbeit"],["Spätdienst","ich","arbeit"],["Teamsitzung 13:30","ich","arbeit"],["Dienst","ich","arbeit"],
+ ["Dienstag Abend frei","ich","persoenlich",true],["Fortbildung Autismus","ich","arbeit"],["Elterngespräch Herr Meier","ich","arbeit"],
+ ["Hilfeplangespräch","ich","arbeit"],["Förderkonferenz","ich","arbeit"],["Lebenshilfe Treffen","ich","arbeit"],["Praktikantin Anleitung","ich","arbeit"],["Hausunterricht","ich","arbeit"],
+ ["TikTok: Day in my life","ich","content"],["Instagram Story planen","ich","content"],["Karussell: 3 Gym-Tipps","ich","content"],["Video schneiden","ich","content"],
+ ["Upload Reel","ich","content"],["👗 OOTD schneiden + posten (ca. 18:30)","ich","content"],["GRWM filmen","ich","content"],["UGC Dreh Marke","ich","content"],
+ ["Caption schreiben","ich","content"],["Content: Zimtschnecken","ich","content"],["Videodreh Samstag","ich","content"],["🎄 Advent-Karussell posten (18:30)","ich","content"],
+ ["Haarschnitt","ich","persoenlich",true],["Haarschnitt Friseur","ich","persoenlich",false],
+ ["Familienessen bei Oma","ich","familie"],["Papa anrufen","ich","familie"],["Besuch Schwester Amelie","ich","familie"],["Opa Geburtstag","ich","familie"],
+ ["Geburtstag Kollegin","ich","persoenlich",true],["Fabi: Kino","ich","fabian"],["Wochenende mit Fabi","ich","fabian"],["Fabian abholen","ich","fabian"],
+ ["Arbeit: Papierkram","ich","arbeit"],["Privat: Mama anrufen","ich","persoenlich"],["Familie: Brunch","ich","familie"],["Content: Planung","ich","content"],["Fabi: Einkauf","ich","fabian"],
+ ["Zahnarzt","ich","persoenlich",false],["Augenarzt Kontrolle","ich","persoenlich",false],["Gym Beine","ich","persoenlich",false],["AKAD Lerneinheit","ich","persoenlich",false],
+ ["Termin bei TUM Universitätsklinikum I Smart Regio Derm","ich","persoenlich",false],["Frisör 12:15","ich","persoenlich",false],
+ ["Termin bei Herrn Müller","ich","persoenlich",true],["Paket abholen","ich","persoenlich",true],
+ ["Training","fabi","fabian"],["Training","familie","familie"],
+ ["Ferien: Osterferien (Bayern)","ich","ferien",false],["Ferien: Herbstferien (Allerheiligen, Bayern)","ich","ferien",false],["Ferienwohnung buchen","ich","ferien",false],
+ ["Zahnarzt","ich","content",false,{manual:{k1:"content"}},"k1"],
+ ["Termin bei Herrn Müller","ich","arbeit",false,{rules:{"müller":"arbeit"}}]
+];
+let pass=0;const tb=document.getElementById("t");
+T.forEach(([title,source,exp,unsure,user,id])=>{
+ const r=Kategorien.categorize({title,source,id,key:id},user);
+ const ok=r.cat===exp&&(unsure===undefined||r.unsure===unsure);if(ok)pass++;
+ const tr=document.createElement("tr");
+ tr.innerHTML=`<td class="${ok?"ok":"bad"}">${ok?"OK":"FEHLER"}</td><td></td><td>${source}</td><td>${exp}${unsure===undefined?"":unsure?" (?)":""}</td><td>${r.cat}${r.unsure?" (?)":""}</td><td>${r.why}</td>`;
+ tr.children[1].textContent=title;tb.appendChild(tr)});
+const s=`${pass} von ${T.length} Tests bestanden`;document.getElementById("sum").textContent=s;document.getElementById("sum").className=pass===T.length?"ok":"bad";document.title=s;
+const sug=[["Termin bei Herrn Müller","müller"],["Mein Termin","" ],["Paket abholen","paket"],["Privat: Steuererklärung machen","steuererklärung"]];
+sug.forEach(([t,w])=>{const g=Kategorien.suggestWord(t);if(g!==w)document.title+=" | suggestWord("+t+"): "+g});
+</script></body></html>
