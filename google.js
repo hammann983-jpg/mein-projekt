@@ -15,15 +15,30 @@ const flag=()=>{try{return localStorage.getItem("ta-consent")==="1"}catch(e){ret
 const setFlag=v=>{try{v?localStorage.setItem("ta-consent","1"):localStorage.removeItem("ta-consent")}catch(e){}};
 const fail=(code,msg,status)=>Object.assign(new Error(msg||code),{code,status});
 
+// Als Home-Bildschirm-App (iPhone) funktionieren Popups nicht zuverlässig. Dort meldet sich die App per Weiterleitung an.
+const redirectMode=()=>navigator.standalone===true||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches);
+function fromRedirect(){const h=location.hash;if(!/access_token=|error=/.test(h))return null;
+ const p=new URLSearchParams(h.slice(1));history.replaceState(null,"",location.pathname+location.search);
+ let st=null;try{st=localStorage.getItem("ta-state");localStorage.removeItem("ta-state")}catch(e){}
+ if(p.get("error"))return p.get("error")==="access_denied"?"denied":"closed";
+ if(!st||p.get("state")!==st||!p.get("access_token"))return"closed";
+ token=p.get("access_token");exp=Date.now()+(Number(p.get("expires_in"))||3600)*1000-60000;setFlag(true);return"ok"}
 function init(ok,bad){onOk=ok;onFail=bad;
  if(!hasId())return bad(fail("noid"));
+ const r=fromRedirect();if(r==="ok")return ok();if(r)return bad(fail(r));
+ if(redirectMode()){if(flag())signIn(true);return}
  if(!(window.google&&google.accounts&&google.accounts.oauth2))return bad(fail("nolib"));
  client=google.accounts.oauth2.initTokenClient({client_id:CFG.CLIENT_ID,scope:SCOPE,
   callback:r=>{if(!r||r.error)return bad(fail(r&&r.error==="access_denied"?"denied":"closed"));
    token=r.access_token;exp=Date.now()+(Number(r.expires_in)||3600)*1000-60000;setFlag(true);onOk()},
   error_callback:()=>bad(fail("closed"))});
  if(flag())signIn(true)}
-function signIn(silent){if(client)client.requestAccessToken({prompt:silent?"":"consent"})}
+function signIn(silent){
+ if(redirectMode()){const st=Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>b.toString(16).padStart(2,"0")).join("");
+  try{localStorage.setItem("ta-state",st)}catch(e){}
+  const q=new URLSearchParams({client_id:CFG.CLIENT_ID,redirect_uri:location.origin+location.pathname,response_type:"token",scope:SCOPE,state:st,include_granted_scopes:"true"});
+  if(!silent)q.set("prompt","consent");location.href="https://accounts.google.com/o/oauth2/v2/auth?"+q;return}
+ if(client)client.requestAccessToken({prompt:silent?"":"consent"})}
 function signOut(){try{if(token)google.accounts.oauth2.revoke(token,()=>{})}catch(e){}token=null;exp=0;fileId=null;setFlag(false)}
 const signedIn=()=>!!token&&Date.now()<exp;
 
