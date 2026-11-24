@@ -11,7 +11,7 @@ const at=(d,h,m)=>{const x=new Date(t0);x.setDate(x.getDate()+d);x.setHours(h,m)
 const ev=(id,sum,d,h,m)=>({id,summary:sum,start:{dateTime:at(d,h,m)},end:{dateTime:at(d,h+1,m)}});
 const DATA={primary:[ev("p1","Mein Termin",0,23,0),ev("p2","Morgen früh",1,8,0),
  ev("t1","To-do: Skript schreiben",0,20,0),ev("t2","To-do: Steuer machen",-1,18,0),ev("t3","✓ To-do: Clips sichern",0,12,0),
- ev("t4","Woche: Wäsche waschen",0,9,0),ev("t5","To-do: Karussell planen",2,17,0)],fam:[ev("f1","Mama: Familienessen",1,18,0)],fabi:[ev("b1","Fabi: Training",2,19,0)]};
+ ev("t4","Woche: Wäsche waschen",0,9,0),ev("t6","Woche: Ort finden fürs Fotoshooting mit Annika und Till",((8-t0.getDay())%7)||7,0,0),ev("t5","To-do: Karussell planen",2,17,0)],fam:[ev("f1","Mama: Familienessen",1,18,0)],fabi:[ev("b1","Fabi: Training",2,19,0)]};
 const CALS=[{id:"test-alicia@example.com",summary:"Alicia",primary:true},{id:"fam",summary:"Familie"},{id:"fabi",summary:"Fabian"}];
 let drive=null;window.__calls=[];
 TERMIN_CONFIG.CLIENT_ID="test.apps.googleusercontent.com";

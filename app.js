@@ -152,9 +152,12 @@ function todoLine(e){const t=e.week?"diese Woche":e.allDay?"ganztägig":fT(e.sta
  return`<li><label class="it" style="--cc:${cv(e.cat)}"><input type="checkbox" data-td="${esc(e.id)}" ${e.done?"checked":""}><span><span class="it-m">${t} · ${esc(CATS[e.cat].n)}</span><span class="it-t">${esc(clean(e.title))}</span></span></label></li>`}
 function renderTodo(){const today=sod(new Date()),m=monday(today),all=events.filter(e=>e.t==="todo").sort((a,b)=>a.start-b.start),groups=[];
  const over=all.filter(e=>!e.done&&e.start<today&&!e.week);if(over.length)groups.push({cls:"over",label:"Überfällig",sub:`${over.length} offen`,items:over});
- const wk=all.filter(e=>e.week&&e.start>=m&&e.start<addD(m,7));if(wk.length)groups.push({cls:"",label:"Diese Woche",sub:"ohne festen Tag",items:wk});
+ const weekGroup=w=>{const ws=addD(m,7*w),wk=all.filter(e=>e.week&&e.start>=ws&&e.start<addD(ws,7));
+  if(wk.length)groups.push({cls:"",label:w===0?"Diese Woche":w===1?"Nächste Woche":`Woche ab ${fD(ws,{day:"numeric",month:"long"})}`,sub:"ohne festen Tag",items:wk})};
+ weekGroup(0);
  for(let i=0;i<=Math.round((addD(today,13)-m)/864e5);i++){const d=addD(m,i),items=all.filter(e=>!e.week&&+sod(e.start)===+d&&(e.start>=today||e.done));if(!items.length)continue;
   const n=Math.round((d-today)/864e5);groups.push({cls:n===0?"today":n<0?"past":"",label:n===0?"Heute":n===1?"Morgen":fD(d,{weekday:"long"}),sub:fD(d,{day:"numeric",month:"long"}),items})}
+ for(let w=1;w<5;w++)weekGroup(w);
  $("view").innerHTML=groups.length?`<section class="card todo"><div class="tl">${groups.map(g=>`<div class="tl-day ${g.cls}"><div class="tl-dot"></div><h3>${esc(g.label)}<small>${esc(g.sub)}</small></h3><ul class="items">${g.items.map(todoLine).join("")}</ul></div>`).join("")}</div></section>`
   :`<section class="card todo"><h2>${mode==="demo"?"Noch nicht angemeldet":"Noch keine To-dos"}</h2><p class="sub">${mode==="demo"?"Melde dich an, dann siehst du hier deine To-dos.":"Schreib Claude im Chat, was diese Woche ansteht. Claude legt jedes To-do an, und es erscheint hier."}</p></section>`}
 async function toggleTodo(id,checked){const e=events.find(x=>x.id===id);if(!e)return;e.done=checked;renderAll();

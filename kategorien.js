@@ -9,7 +9,7 @@
 (function(root){
 const KW={
  arbeit:["hpt","dienst","frühdienst","spätdienst","nachtdienst","mitarbeitergespräch*","supervision*","teamsitzung*","teambesprechung*","förderkonferenz*","elterngespräch*","hilfeplan*","lebenshilfe","praktikantin*","anleitung*","fortbildung*","hausunterricht"],
- content:["content*","reel*","tiktok*","instagram*","story","stories","karussell*","dreh*","videodreh*","filmen","schneiden","schnitt","videoschnitt","upload*","posten","ugc","caption*","ootd","grwm","voiceover*","skript*"],
+ content:["content*","reel*","tiktok*","instagram*","story","stories","karussell*","dreh*","videodreh*","filmen","schneiden","schnitt","videoschnitt","upload*","posten","ugc","caption*","ootd","grwm","voiceover*","skript*","fotoshooting*","shooting*"],
  familie:["mama","papa","familie*","schwester","amelie","oma","opa"],
  fabian:["fabi","fabian"],
  ferien:["ferien*"]};
