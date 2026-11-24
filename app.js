@@ -245,7 +245,7 @@ document.addEventListener("touchstart",e=>{pullY=window.scrollY<=0?e.touches[0].
 document.addEventListener("touchend",e=>{if(pullY!=null&&mode==="live"&&e.changedTouches[0].clientY-pullY>110){toast("Aktualisiere …");refresh()}pullY=null},{passive:true});
 
 /* ---------- Start ---------- */
-$("ver").textContent="Version 8 · 24.11.2026";
+{const v=$("ver");if(v)v.textContent="Version 9 · 24.11.2026"}
 hello();
 setStatus("demo","Lade …");applyPattern(CUR[0],CUR[1]);renderAll();setInterval(renderNow,30000);
 function boot(){G.init(connect,onInitFail);if(G.hasId()&&!G.remembered())useDemo("Melde dich an, um deine Termine zu sehen.","Mit Google anmelden",signInBtn)}

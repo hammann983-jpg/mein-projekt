@@ -1,6 +1,6 @@
 ﻿// Service Worker: speichert nur die Website-Dateien für schnelles Laden.
 // Kalenderdaten und Google-Anmeldung werden NIE zwischengespeichert.
-const CACHE = "termine-v2-p8";
+const CACHE = "termine-v2-p9";
 const FILES = ["./", "index.html", "styles.css", "app.js", "google.js", "kategorien.js", "config.js", "manifest.webmanifest", "icon.svg", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png", "bubbles.jpg"];
 
 self.addEventListener("install", e => {
@@ -14,9 +14,9 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== location.origin) return; // Google-Anfragen direkt durchlassen
-  // Erst Netz (immer aktuell), bei Offline die gespeicherte Version
+  // Erst Netz (immer aktuell, GitHub Pages darf nichts bis zu 10 Minuten zwischenspeichern), bei Offline die gespeicherte Version
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: "no-cache" })
       .then(r => { const copy = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); return r; })
       .catch(() => caches.match(e.request))
   );

@@ -33,7 +33,7 @@ window.__drive=()=>drive;
 <\/script>`;
 fetch("index.html").then(r=>r.text()).then(h=>{
   const END="<\/script>";
-  h=h.replace('<script src="https://accounts.google.com/gsi/client" async defer>'+END,'').replace('<script src="google.js">'+END,STUB+'<script src="google.js">'+END);
+  h=h.replace('<script src="https://accounts.google.com/gsi/client" async defer>'+END,'').replace('<script src="google.js?v=9">'+END,STUB+'<script src="google.js?v=9">'+END);
   document.open();document.write(h);document.close();
 });
 </script>
