@@ -20,6 +20,7 @@ let ME=Object.values(CFG.USERS||{})[0]||{name:"Alicia",tabs:["ich","familie","fa
 const TABS={ich:"Ich",familie:"Familie",fabi:"Fabi",todo:"To-dos"};
 const CATS={arbeit:{n:"Arbeit"},content:{n:"Content"},familie:{n:"Familienleben"},fabian:{n:"Fabian"},persoenlich:{n:"Persönlich"},ferien:{n:"Ferien"}};
 const K=window.Kategorien;
+const SYS=/#(weeknum|holiday)@/; // Kalenderwochen und Feiertage von Google: nie als Reiter-Kalender wählbar
 const cv=c=>`var(--c-${c})`;
 const IMPORTANT=/prüfung|klausur|abgabe|frist|arzt|gespräch|supervision/i;
 const isImp=e=>/!/.test(e.title)||(e.cat==="arbeit"&&!e.allDay)||IMPORTANT.test(e.title);
@@ -148,7 +149,7 @@ function renderMonth(){const f=new Date(monthCur.getFullYear(),monthCur.getMonth
  $("mPrev").onclick=()=>moveMonth(-1);$("mNext").onclick=()=>moveMonth(1);$("mToday").onclick=()=>{monthCur=new Date();selDay=sod(new Date());renderAll()}}
 function moveMonth(n){monthCur=new Date(monthCur.getFullYear(),monthCur.getMonth()+n,1);selDay=null;renderAll()}
 /* ---------- To-dos: Zeitleiste nach Fälligkeit ---------- */
-function todoLine(e){const t=e.week?"diese Woche":e.allDay?"ganztägig":fT(e.start);
+function todoLine(e){const t=e.week?"ohne festen Tag":e.allDay?"ganztägig":fT(e.start);
  return`<li><label class="it" style="--cc:${cv(e.cat)}"><input type="checkbox" data-td="${esc(e.id)}" ${e.done?"checked":""}><span><span class="it-m">${t} · ${esc(CATS[e.cat].n)}</span><span class="it-t">${esc(clean(e.title))}</span></span></label></li>`}
 function renderTodo(){const today=sod(new Date()),m=monday(today),all=events.filter(e=>e.t==="todo").sort((a,b)=>a.start-b.start),groups=[];
  const over=all.filter(e=>!e.done&&e.start<today&&!e.week);if(over.length)groups.push({cls:"over",label:"Überfällig",sub:`${over.length} offen`,items:over});
@@ -161,10 +162,11 @@ function renderTodo(){const today=sod(new Date()),m=monday(today),all=events.fil
  $("view").innerHTML=groups.length?`<section class="card todo"><div class="tl">${groups.map(g=>`<div class="tl-day ${g.cls}"><div class="tl-dot"></div><h3>${esc(g.label)}<small>${esc(g.sub)}</small></h3><ul class="items">${g.items.map(todoLine).join("")}</ul></div>`).join("")}</div></section>`
   :`<section class="card todo"><h2>${mode==="demo"?"Noch nicht angemeldet":"Noch keine To-dos"}</h2><p class="sub">${mode==="demo"?"Melde dich an, dann siehst du hier deine To-dos.":"Schreib Claude im Chat, was diese Woche ansteht. Claude legt jedes To-do an, und es erscheint hier."}</p></section>`}
 async function toggleTodo(id,checked){const e=events.find(x=>x.id===id);if(!e)return;e.done=checked;renderAll();
- toast(checked?(todoSet().every(x=>x.done)?"Alles geschafft – stark!":"Geschafft"):"Wieder offen");
+ const wk=todoSet();toast(checked?(wk.length&&wk.every(x=>x.done)?"Alles geschafft – stark!":"Geschafft"):"Wieder offen");
  try{await G.patchEvent(e.calId,e.eid,{summary:(checked?"✓ ":"")+e.prefix+e.title})}
  catch(err){e.done=!checked;renderAll();toast("Speichern in Google hat nicht geklappt. Bitte nochmal tippen.")}}
-function renderAll(){document.querySelectorAll(".switch button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===view));renderTabs();renderNow();renderProg();tab==="todo"?renderTodo():view==="monat"?renderMonth():renderWeek()}
+function renderAll(){document.querySelectorAll(".switch button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===view));renderTabs();renderNow();renderProg();tab==="todo"?renderTodo():view==="monat"?renderMonth():renderWeek();
+ if(mode==="live"&&tab!=="ich"&&tab!=="todo"&&!settings.cal[tab])$("view").insertAdjacentHTML("afterbegin",`<section class="card"><h2>Noch kein Kalender</h2><p class="sub">Für „${esc(TABS[tab])}" ist in Google noch kein Kalender zugeordnet. Lege in Google Kalender einen an oder lass ihn mit dir teilen. Dann wählst du ihn unter „Kalender zuordnen".</p></section>`)}
 function toast(t){const el=$("toast");el.textContent=t;el.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove("on"),2600)}
 
 /* ---------- Bedienung ---------- */
@@ -222,10 +224,12 @@ async function connect(){
   ME=CFG.USERS&&CFG.USERS[uh]?CFG.USERS[uh]:{name:"du",tabs:["ich","familie"]};
   if(!ME.tabs.includes(tab)){tab=ME.tabs[0]}
   settings=await G.loadSettings();settings.cal=settings.cal||{};if(!("ich" in settings.cal))settings.cal.ich="primary";
+  let fixed=false;for(const k of Object.keys(settings.cal))if(k!=="ich"&&SYS.test(settings.cal[k]||"")){delete settings.cal[k];fixed=true}
+  if(fixed)try{await G.saveSettings(settings)}catch(e){}
   $("calOpen").hidden=ME.tabs.length<2;hello();await refresh();
-  if(mode==="live"&&ME.tabs.some(k=>k!=="ich"&&!(k in settings.cal)))openCal(true)}
+  if(mode==="live"&&ME.tabs.some(k=>k!=="ich"&&!(k in settings.cal))&&calList.some(c=>!c.primary&&!SYS.test(c.id)))openCal(true)}
  catch(e){onApiErr(e)}}
-function renderCal(){$("calRows").innerHTML=ME.tabs.filter(k=>k!=="ich").map(k=>`<label class="calrow">${esc(TABS[k])}<select data-k="${k}"><option value="">– kein Kalender –</option>${calList.filter(c=>!c.primary).map(c=>`<option value="${esc(c.id)}"${settings.cal[k]===c.id?" selected":""}>${esc(c.name)}</option>`).join("")}</select></label>`).join("")}
+function renderCal(){$("calRows").innerHTML=ME.tabs.filter(k=>k!=="ich").map(k=>`<label class="calrow">${esc(TABS[k])}<select data-k="${k}"><option value="">– kein Kalender –</option>${calList.filter(c=>!c.primary&&!SYS.test(c.id)).map(c=>`<option value="${esc(c.id)}"${settings.cal[k]===c.id?" selected":""}>${esc(c.name)}</option>`).join("")}</select></label>`).join("")}
 function openCal(first){renderCal();$("calSub").textContent=first?"Erster Start: Wähle einmal, welcher Google-Kalender zu welchem Reiter gehört. Das gilt danach auf allen deinen Geräten.":"Welcher Google-Kalender gehört zu welchem Reiter?";$("calMsg").textContent="";$("pCal").hidden=false;$("calOpen").setAttribute("aria-expanded","true");$("pCal").scrollIntoView({behavior:"smooth",block:"start"})}
 $("calOpen").addEventListener("click",()=>{if($("pCal").hidden)openCal(false);else{$("pCal").hidden=true;$("calOpen").setAttribute("aria-expanded","false")}});
 $("calSave").addEventListener("click",async()=>{const msg=$("calMsg");$("calRows").querySelectorAll("select").forEach(s=>{settings.cal[s.dataset.k]=s.value});
