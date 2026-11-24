@@ -56,6 +56,9 @@ async function events(calId,from,to){let out=[],page="";
   const d=await api(`${CAL}/calendars/${encodeURIComponent(calId)}/events?${q}`);out=out.concat(d.items||[]);page=d.nextPageToken;if(!page)break}
  return out}
 
+// Ändert einen Termin (z. B. den Titel mit ✓ als erledigt). Braucht den Scope calendar.events.
+async function patchEvent(calId,eventId,body){return api(`${CAL}/calendars/${encodeURIComponent(calId)}/events/${encodeURIComponent(eventId)}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})}
+
 async function loadSettings(){
  const l=await api(`${DRIVE}?spaces=appDataFolder&q=${encodeURIComponent("name='settings.json'")}&fields=files(id)`);
  fileId=l.files&&l.files[0]?l.files[0].id:null;if(!fileId)return{};
@@ -66,4 +69,4 @@ async function saveSettings(obj){const body=JSON.stringify(obj);
  const multi=`--${b}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify({name:"settings.json",parents:["appDataFolder"]})}\r\n--${b}\r\nContent-Type: application/json\r\n\r\n${body}\r\n--${b}--`;
  const f=await api(`${UPLOAD}?uploadType=multipart&fields=id`,{method:"POST",headers:{"Content-Type":`multipart/related; boundary=${b}`},body:multi});fileId=f.id}
 
-return{init,signIn,signOut,signedIn,hasId,remembered:flag,calendars,events,loadSettings,saveSettings}})();
+return{init,signIn,signOut,signedIn,hasId,remembered:flag,calendars,events,patchEvent,loadSettings,saveSettings}})();

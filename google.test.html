@@ -9,15 +9,18 @@ const STUB=`<script>
 const t0=new Date();t0.setHours(0,0,0,0);
 const at=(d,h,m)=>{const x=new Date(t0);x.setDate(x.getDate()+d);x.setHours(h,m);return x.toISOString()};
 const ev=(id,sum,d,h,m)=>({id,summary:sum,start:{dateTime:at(d,h,m)},end:{dateTime:at(d,h+1,m)}});
-const DATA={primary:[ev("p1","Mein Termin",0,23,0),ev("p2","Morgen früh",1,8,0)],fam:[ev("f1","Mama: Familienessen",1,18,0)],fabi:[ev("b1","Fabi: Training",2,19,0)]};
+const DATA={primary:[ev("p1","Mein Termin",0,23,0),ev("p2","Morgen früh",1,8,0),
+ ev("t1","To-do: Skript schreiben",0,20,0),ev("t2","To-do: Steuer machen",-1,18,0),ev("t3","✓ To-do: Clips sichern",0,12,0),
+ ev("t4","Woche: Wäsche waschen",0,9,0),ev("t5","To-do: Karussell planen",2,17,0)],fam:[ev("f1","Mama: Familienessen",1,18,0)],fabi:[ev("b1","Fabi: Training",2,19,0)]};
 const CALS=[{id:"test-alicia@example.com",summary:"Alicia",primary:true},{id:"fam",summary:"Familie"},{id:"fabi",summary:"Fabian"}];
 let drive=null;window.__calls=[];
 TERMIN_CONFIG.CLIENT_ID="test.apps.googleusercontent.com";
-TERMIN_CONFIG.USERS={"0fdb34067d27893619fea4550f6d602da2e1cc4a05af90aac9ea69e4efedbfae":{name:"Alicia",tabs:["ich","familie","fabi"]}};
+TERMIN_CONFIG.USERS={"0fdb34067d27893619fea4550f6d602da2e1cc4a05af90aac9ea69e4efedbfae":{name:"Alicia",tabs:["ich","familie","fabi","todo"]}};
 window.google={accounts:{oauth2:{initTokenClient:o=>({requestAccessToken:()=>setTimeout(()=>o.callback({access_token:"TEST",expires_in:3600}),10)}),revoke:()=>{}}}};
 const json=(o,s=200)=>Promise.resolve(new Response(JSON.stringify(o),{status:s,headers:{"Content-Type":"application/json"}}));
 window.fetch=(url,opt={})=>{url=String(url);__calls.push((opt.method||"GET")+" "+url.replace("https://www.googleapis.com/",""));
  if(!(opt.headers&&opt.headers.Authorization==="Bearer TEST"))return json({error:{message:"kein Token"}},401);
+ if(opt.method==="PATCH"&&/\\/events\\//.test(url)){(window.__patches=window.__patches||[]).push({url:url.split("/events/")[1],body:JSON.parse(opt.body)});return json({})}
  if(url.includes("/calendarList"))return json({items:CALS});
  let m=url.match(/\\/calendars\\/([^/]+)\\/events/);if(m){const id=decodeURIComponent(m[1]);return json({items:DATA[id==="test-alicia@example.com"?"primary":id]||[]})}
  if(url.includes("/upload/drive/v3/files")&&opt.method==="POST"){drive=opt.body.split("\\r\\n\\r\\n")[2].split("\\r\\n")[0];return json({id:"F1"})}

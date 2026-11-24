@@ -12,6 +12,6 @@ window.TERMIN_CONFIG = {
   // Wer sieht was: SHA-256 der Google-Adresse (klein geschrieben) -> Name und Reiter.
   // Die Adressen selbst stehen bewusst nicht hier, weil das Repo öffentlich ist. Mama kommt in Phase 5 dazu.
   USERS: {
-    "ac7fa6913bcc10f5f9a45b19b2f119c7cbf66cd5387aa1b222c4735b1ec00287": { name: "Alicia", tabs: ["ich", "familie", "fabi"] }
+    "ac7fa6913bcc10f5f9a45b19b2f119c7cbf66cd5387aa1b222c4735b1ec00287": { name: "Alicia", tabs: ["ich", "familie", "fabi", "todo"] }
   }
 };

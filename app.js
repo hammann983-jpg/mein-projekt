@@ -17,7 +17,7 @@ const store={get(k,f){try{const v=localStorage.getItem(k);return v==null?f:JSON.
 /* ---------- Nutzerin, Reiter, Kategorien ---------- */
 const CFG=window.TERMIN_CONFIG||{};
 let ME=Object.values(CFG.USERS||{})[0]||{name:"Alicia",tabs:["ich","familie","fabi"]};
-const TABS={ich:"Ich",familie:"Familie",fabi:"Fabi"};
+const TABS={ich:"Ich",familie:"Familie",fabi:"Fabi",todo:"To-dos"};
 const CATS={arbeit:{n:"Arbeit"},content:{n:"Content"},familie:{n:"Familienleben"},fabian:{n:"Fabian"},persoenlich:{n:"Persönlich"},ferien:{n:"Ferien"}};
 const K=window.Kategorien;
 const cv=c=>`var(--c-${c})`;
@@ -93,7 +93,8 @@ $("patOpen").addEventListener("click",()=>{const open=$("pPattern").hidden;$("pP
 let events=[],mode="demo",settings={cal:{}},calList=[],updatedAt=null,loading=false;
 const done=new Set(store.get("ta-done",[]));
 const doneKey=e=>`${e.id}|${ymd(e.start)}`;
-const inTab=(e,tab)=>tab==="fabi"?(e.t==="fabi"||e.cat==="fabian"):e.t===tab;
+// To-dos (t="todo") erscheinen nur im Reiter „To-dos", nie als Termine.
+const inTab=(e,tab)=>tab==="todo"?e.t==="todo":e.t==="todo"?false:tab==="fabi"?(e.t==="fabi"||e.cat==="fabian"):e.t===tab;
 
 /* ---------- Zustand ---------- */
 let tab=store.get("ta-tab","ich");if(!ME.tabs.includes(tab))tab=ME.tabs[0];
@@ -111,17 +112,22 @@ function inTxt(e){const now=new Date();if(e.start<=now)return"läuft gerade";
 const tTxt=e=>e.allDay?"ganztägig":`${fT(e.start)}–${fT(e.end)}`;
 function renderTabs(){$("tabs").innerHTML=ME.tabs.map(k=>`<button type="button" role="tab" data-t="${k}" aria-selected="${k===tab}">${esc(TABS[k])}</button>`).join("")}
 const noCd=e=>e.cat==="persoenlich"||e.cat==="ferien"||(CFG.NO_COUNTDOWN||[]).some(w=>e.title.toLowerCase().includes(String(w).toLowerCase()));
-function renderNow(){const now=new Date(),nx=tabEvents().find(e=>e.end>now&&!(e.allDay&&e.start<now)&&!done.has(doneKey(e))&&!noCd(e));const lab=$("nowLabel");
+function renderNow(){if(tab==="todo")return;const now=new Date(),nx=tabEvents().find(e=>e.end>now&&!(e.allDay&&e.start<now)&&!done.has(doneKey(e))&&!noCd(e));const lab=$("nowLabel");
  if(!nx){lab.style.removeProperty("--cc");lab.innerHTML="<i></i>Jetzt dran";$("nowTitle").textContent=mode==="demo"?"Noch nicht angemeldet":"Nichts offen";$("nowMeta").textContent=mode==="demo"?"Melde dich an, dann steht hier dein nächster Termin.":"Alles erledigt oder frei. Zeit für dich.";["cdD","cdH","cdM"].forEach(i=>$(i).textContent="0");$("cdNote").textContent="";return}
  lab.style.setProperty("--cc",cv(nx.cat));lab.innerHTML=`<i></i>Jetzt dran · ${esc(CATS[nx.cat].n)}`;$("nowTitle").textContent=clean(nx.title);
  $("nowMeta").textContent=`${fD(nx.start,{weekday:"long",day:"numeric",month:"long"})} · ${tTxt(nx)}${nx.location?" · "+nx.location:""}`;
  const ms=Math.max(0,nx.start-now);$("cdD").textContent=Math.floor(ms/864e5);$("cdH").textContent=Math.floor(ms%864e5/36e5);$("cdM").textContent=Math.floor(ms%36e5/6e4);
  $("cdNote").textContent=inTxt(nx)}
-function renderProg(){const m=monday(new Date()),wk=tabEvents().filter(e=>e.start>=m&&e.start<addD(m,7)),d=wk.filter(e=>done.has(doneKey(e))).length,p=wk.length?Math.round(d/wk.length*100):0;
- $("fill").style.width=p+"%";$("pct").textContent=`${p} %${wk.length?` · ${d} von ${wk.length}`:""}`;
- $("statL").innerHTML=wk.length?`<b>${d} von ${wk.length}</b> Terminen diese Woche erledigt`:"Diese Woche ist frei";
- $("statR").textContent=wk.length-d?`${wk.length-d} offen`:wk.length?"Woche geschafft":"";
- $("swW").textContent=`${fD(m,{day:"numeric",month:"numeric"})}–${fD(addD(m,6),{day:"numeric",month:"numeric"})}`;$("swM").textContent=fD(monthCur,{month:"long"})}
+/* Prozent und Balken gibt es nur für To-dos, nicht für Termine. Gezählt wird: fällig diese Woche, plus offene aus früheren Tagen. */
+const todoSet=()=>{const m=monday(new Date()),end=addD(m,7);return events.filter(e=>e.t==="todo"&&((e.start>=m&&e.start<end)||(!e.done&&e.start<m)))};
+function renderProg(){const m=monday(new Date()),td=tab==="todo";
+ $("swW").textContent=`${fD(m,{day:"numeric",month:"numeric"})}–${fD(addD(m,6),{day:"numeric",month:"numeric"})}`;$("swM").textContent=fD(monthCur,{month:"long"});
+ document.querySelector(".now").hidden=td;document.querySelector(".switch").hidden=td;document.querySelector(".prog").hidden=!td;
+ if(!td)return;
+ const set=todoSet(),d=set.filter(e=>e.done).length,p=set.length?Math.round(d/set.length*100):0;
+ $("fill").style.width=p+"%";$("pct").textContent=`${p} %${set.length?` · ${d} von ${set.length}`:""}`;
+ $("statL").innerHTML=set.length?`<b>${d} von ${set.length}</b> To-dos diese Woche geschafft`:"Noch keine To-dos diese Woche";
+ $("statR").textContent=set.length-d?`${set.length-d} offen`:set.length?"Woche geschafft":""}
 function dayCard(d,i,expanded){const today=sod(new Date()),l=onDay(d),isT=+d===+today,past=d<today,dn=l.filter(e=>done.has(doneKey(e))).length;
  const show=expanded?l:[...l].sort((a,b)=>isImp(b)-isImp(a)||a.start-b.start).slice(0,4).sort((a,b)=>a.start-b.start);
  return`<article class="card day${past?" past":""}${isT?" today":""}" style="animation-delay:${i*.04}s" ${isT?'id="todayCard"':""}>
@@ -141,13 +147,27 @@ function renderMonth(){const f=new Date(monthCur.getFullYear(),monthCur.getMonth
  <p class="mhint">Tipp auf einen Tag, um ihn als Liste zu sehen.</p></section>${selDay?`<div class="mdetail">${dayCard(selDay,0,true)}</div>`:""}`;
  $("mPrev").onclick=()=>moveMonth(-1);$("mNext").onclick=()=>moveMonth(1);$("mToday").onclick=()=>{monthCur=new Date();selDay=sod(new Date());renderAll()}}
 function moveMonth(n){monthCur=new Date(monthCur.getFullYear(),monthCur.getMonth()+n,1);selDay=null;renderAll()}
-function renderAll(){document.querySelectorAll(".switch button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===view));renderTabs();renderNow();renderProg();view==="monat"?renderMonth():renderWeek()}
+/* ---------- To-dos: Zeitleiste nach Fälligkeit ---------- */
+function todoLine(e){const t=e.week?"diese Woche":e.allDay?"ganztägig":fT(e.start);
+ return`<li><label class="it" style="--cc:${cv(e.cat)}"><input type="checkbox" data-td="${esc(e.id)}" ${e.done?"checked":""}><span><span class="it-m">${t} · ${esc(CATS[e.cat].n)}</span><span class="it-t">${esc(clean(e.title))}</span></span></label></li>`}
+function renderTodo(){const today=sod(new Date()),m=monday(today),all=events.filter(e=>e.t==="todo").sort((a,b)=>a.start-b.start),groups=[];
+ const over=all.filter(e=>!e.done&&e.start<today&&!e.week);if(over.length)groups.push({cls:"over",label:"Überfällig",sub:`${over.length} offen`,items:over});
+ const wk=all.filter(e=>e.week&&e.start>=m&&e.start<addD(m,7));if(wk.length)groups.push({cls:"",label:"Diese Woche",sub:"ohne festen Tag",items:wk});
+ for(let i=0;i<=Math.round((addD(today,13)-m)/864e5);i++){const d=addD(m,i),items=all.filter(e=>!e.week&&+sod(e.start)===+d&&(e.start>=today||e.done));if(!items.length)continue;
+  const n=Math.round((d-today)/864e5);groups.push({cls:n===0?"today":n<0?"past":"",label:n===0?"Heute":n===1?"Morgen":fD(d,{weekday:"long"}),sub:fD(d,{day:"numeric",month:"long"}),items})}
+ $("view").innerHTML=groups.length?`<section class="card todo"><div class="tl">${groups.map(g=>`<div class="tl-day ${g.cls}"><div class="tl-dot"></div><h3>${esc(g.label)}<small>${esc(g.sub)}</small></h3><ul class="items">${g.items.map(todoLine).join("")}</ul></div>`).join("")}</div></section>`
+  :`<section class="card todo"><h2>${mode==="demo"?"Noch nicht angemeldet":"Noch keine To-dos"}</h2><p class="sub">${mode==="demo"?"Melde dich an, dann siehst du hier deine To-dos.":"Schreib Claude im Chat, was diese Woche ansteht. Claude legt jedes To-do an, und es erscheint hier."}</p></section>`}
+async function toggleTodo(id,checked){const e=events.find(x=>x.id===id);if(!e)return;e.done=checked;renderAll();
+ toast(checked?(todoSet().every(x=>x.done)?"Alles geschafft – stark!":"Geschafft"):"Wieder offen");
+ try{await G.patchEvent(e.calId,e.eid,{summary:(checked?"✓ ":"")+e.prefix+e.title})}
+ catch(err){e.done=!checked;renderAll();toast("Speichern in Google hat nicht geklappt. Bitte nochmal tippen.")}}
+function renderAll(){document.querySelectorAll(".switch button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===view));renderTabs();renderNow();renderProg();tab==="todo"?renderTodo():view==="monat"?renderMonth():renderWeek()}
 function toast(t){const el=$("toast");el.textContent=t;el.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove("on"),2600)}
 
 /* ---------- Bedienung ---------- */
 $("tabs").addEventListener("click",e=>{const b=e.target.closest("button[data-t]");if(!b)return;tab=b.dataset.t;store.set("ta-tab",tab);selDay=null;renderAll()});
 document.querySelector(".switch").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;view=b.dataset.v;store.set("ta-view",view);if(view==="monat"&&!selDay)selDay=sod(new Date());renderAll()});
-$("view").addEventListener("change",e=>{const c=e.target.closest("input[data-k]");if(!c)return;c.checked?done.add(c.dataset.k):done.delete(c.dataset.k);store.set("ta-done",[...done].slice(-500));
+$("view").addEventListener("change",e=>{const td=e.target.closest("input[data-td]");if(td){toggleTodo(td.dataset.td,td.checked);return}const c=e.target.closest("input[data-k]");if(!c)return;c.checked?done.add(c.dataset.k):done.delete(c.dataset.k);store.set("ta-done",[...done].slice(-500));
  const m=monday(new Date()),wk=tabEvents().filter(x=>x.start>=m&&x.start<addD(m,7));
  toast(c.checked&&wk.length&&wk.every(x=>done.has(doneKey(x)))?"Woche geschafft – stark!":c.checked?"Abgehakt":"Wieder offen");setTimeout(renderAll,250)});
 /* ---------- „?": Kategorie wählen, einmal fragen, Regel merken ---------- */
@@ -181,14 +201,16 @@ function onApiErr(e){const c=e&&e.code,live=mode==="live";
  const why=c==="net"?"Keine Verbindung zu Google. Neuer Versuch in 2 Min.":e.status===403?"Google lehnt den Zugriff ab (403). Prüfe: Calendar API, Tasks API und Drive API sind in der Google Cloud aktiv und deine Adresse ist Testnutzer.":`Google meldet: ${String(e&&e.message||"Unbekannter Fehler").slice(0,100)}`;
  if(live)setStatus("live",`${why} Stand ${updatedAt?fT(updatedAt):""}`,"Abmelden",signOut);else useDemo(why,"Erneut versuchen",()=>connect())}
 function signOut(){G.signOut();ME=Object.values(CFG.USERS||{})[0]||ME;useDemo("Abgemeldet.","Mit Google anmelden",signInBtn)}
-function norm(o,k){if(o.status==="cancelled")return null;const sr=o.start&&(o.start.dateTime||o.start.date);if(!sr)return null;const allDay=!o.start.dateTime;
+function norm(o,k,calId){if(o.status==="cancelled")return null;const sr=o.start&&(o.start.dateTime||o.start.date);if(!sr)return null;const allDay=!o.start.dateTime;
  const start=allDay?new Date(sr+"T00:00:00"):new Date(sr),er=o.end&&(o.end.dateTime||o.end.date);let end=er?(allDay?new Date(er+"T00:00:00"):new Date(er)):new Date(+start+36e5);if(isNaN(start))return null;if(isNaN(end))end=new Date(+start+36e5);
- const e={id:`${k}:${o.id}`,key:o.recurringEventId||o.id,source:k,t:k,title:o.summary||"(ohne Titel)",start,end,allDay,location:o.location||""};
- const r=K.categorize(e,settings);e.cat=r.cat;e.unsure=r.unsure;return e}
-function recat(){events.forEach(e=>{const r=K.categorize(e,settings);e.cat=r.cat;e.unsure=r.unsure})}
+ /* To-do = Eintrag im Kalender „To-dos" oder Titel mit „To-do:" bzw. „Woche:". Erledigt = Titel beginnt mit ✓. */
+ const s=(o.summary||"(ohne Titel)").replace(/^\s*✓\s*/,""),dn=s!==(o.summary||"(ohne Titel)"),pm=s.match(/^\s*(to-?do|woche)\s*:\s*/i),todo=k==="todo"||!!pm;
+ const e={id:`${k}:${o.id}`,eid:o.id,calId,key:o.recurringEventId||o.id,source:todo?"ich":k,t:todo?"todo":k,todo,week:!!pm&&/^\s*woche/i.test(pm[0]),done:todo&&dn,prefix:pm?pm[0]:"",title:todo?s.slice(pm?pm[0].length:0):(o.summary||"(ohne Titel)"),start,end,allDay,location:o.location||""};
+ const r=K.categorize(e,settings);e.cat=r.cat;e.unsure=todo?false:r.unsure;return e}
+function recat(){events.forEach(e=>{const r=K.categorize(e,settings);e.cat=r.cat;e.unsure=e.todo?false:r.unsure})}
 async function refresh(){if(!G.signedIn()||loading)return;loading=true;
  const from=monday(addD(new Date(),-35)),to=addD(new Date(),150),out=[];
- try{for(const k of ME.tabs){const id=settings.cal[k];if(!id)continue;for(const o of await G.events(id,from,to)){const e=norm(o,k);if(e)out.push(e)}}
+ try{for(const k of ME.tabs){const id=settings.cal[k];if(!id)continue;for(const o of await G.events(id,from,to)){const e=norm(o,k,id);if(e)out.push(e)}}
   events=out.sort((a,b)=>a.start-b.start);mode="live";updatedAt=new Date();setStatus("live",`Live mit Google · aktualisiert ${fT(updatedAt)}`,"Abmelden",signOut);renderAll()}
  catch(e){onApiErr(e)}finally{loading=false}}
 const sha=async s=>[...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)))].map(b=>b.toString(16).padStart(2,"0")).join("");
