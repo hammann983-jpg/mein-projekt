@@ -1,6 +1,6 @@
 ﻿// Service Worker: speichert nur die Website-Dateien für schnelles Laden.
 // Kalenderdaten und Google-Anmeldung werden NIE zwischengespeichert.
-const CACHE = "termine-v2-p7";
+const CACHE = "termine-v2-p8";
 const FILES = ["./", "index.html", "styles.css", "app.js", "google.js", "kategorien.js", "config.js", "manifest.webmanifest", "icon.svg", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png", "bubbles.jpg"];
 
 self.addEventListener("install", e => {
